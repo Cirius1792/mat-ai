@@ -25,3 +25,4 @@ docker-compose.override.yml
 /data/
 /config/*
 !/config/config.yaml.example
+.secrets
