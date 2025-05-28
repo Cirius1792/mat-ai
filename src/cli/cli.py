@@ -5,7 +5,7 @@ import yaml
 from matai.dao.interface import EmailContentDAO
 import matai.dao.sqlite as dao
 from matai.manager.sqlite_dao import SQLiteExecutionReportDAO
-from configuration import Config
+from configuration.configuration_service import ConfigurationService, FileConfigStorage
 
 DB_PATH = "pmai_sqlite.db"
 
@@ -83,7 +83,8 @@ def verify_config(verify):
         return
 
     try:
-        config = Config.load_config_from_yaml(verify)
+        service = ConfigurationService(FileConfigStorage(verify))
+        config = service.retrieve()
         click.echo("Configuration file is valid. Parsed configuration:")
         click.echo(yaml.dump(config.to_dict(), default_flow_style=False))
     except FileNotFoundError:
@@ -94,7 +95,7 @@ def verify_config(verify):
         click.echo(f"Error: Failed to parse configuration:\n{e}")
 
 
-@cli.command("show-history")
+@cli.command("run-history")
 @click.argument("num", type=int, default=5)
 @click.pass_context
 def show_run_history_cmd(ctx, num):
@@ -115,10 +116,11 @@ def show_run_history_cmd(ctx, num):
 def run_command(ctx):
     """Run processing of new emails using ProcessNewEmailsCommand."""
     import os, yaml, click
-    from configuration import Config
+    from configuration.configuration_service import ConfigurationService, FileConfigStorage
     configuration_path = os.getenv('PMAI_CONFIG_PATH', './config/config.yaml')
     try:
-        config = Config.load_config_from_yaml(configuration_path)
+        service = ConfigurationService(FileConfigStorage(configuration_path))
+        config = service.retrieve()
     except FileNotFoundError:
         click.echo("Error: Configuration file not found.")
         return
