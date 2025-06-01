@@ -7,6 +7,8 @@ import logging
 from matai.email_client.interface import EmailClientInterface
 from matai.email_processing.model import EmailContent, EmailAddress
 
+logger = logging.getLogger(__name__)
+
 
 def consent_input_token(consent_url):
     print('Visit the following url to give consent:')
@@ -46,14 +48,14 @@ class O365Account:
             # no need to pass state as the session is the same
             result = self.account.con.request_token(token_url, **kwargs)
             if result:
-                print(
+                logger.debug(
                     'Authentication Flow Completed. Oauth Access Token Stored. You can now use the API.')
             else:
-                print('Something went wrong. Please try again.')
+                logger.debug('Something went wrong')
 
             return bool(result)
         else:
-            print('Authentication Flow aborted.')
+            logger.warning('Authentication Flow aborted.')
             return False
 
     @property
@@ -117,7 +119,7 @@ class O365EmailClient(EmailClientInterface):
                 raw_content=str(msg)
             )
             content.body = msg.body  # This will trigger clean_body generation
-            logging.debug(
+            logger.debug(
                 f"Retrieved message ID={content.message_id}, subject={content.subject}, received={content.timestamp}")
 
             yield content

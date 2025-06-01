@@ -39,9 +39,9 @@ def cli(ctx):
 
     ctx.obj = {
         # FIXME: the three following line and their usages should be replaced with the usage of the app_ctx object
-        "action_item_dao": ctx.app.action_item_dao,
-        "email_content_dao": ctx.email_content_dao,
-        "execution_report_dao": ctx.execution_report_dao,
+        "action_item_dao": app_ctx.action_item_dao,
+        "email_content_dao": app_ctx.email_content_dao,
+        "execution_report_dao": app_ctx.execution_report_dao,
         "app_ctx": app_ctx,
         "app_config": config,
     }
@@ -131,6 +131,29 @@ def show_run_history_cmd(ctx, num):
         click.echo("No execution reports found.")
 
 
+@cli.command("authenticate")
+@click.pass_context
+def authenticate_command(ctx):
+    """Authenticate the application with the email server."""
+
+    ctx_app = ctx.obj["app_ctx"]
+    if ctx_app.outlook_auth_client.is_authenticated:
+        click.echo("Already authenticated")
+        return
+
+    auth_link, flow = ctx_app.outlook_auth_client.get_auth_link()
+    click.echo("Please visit this URL to authenticate:")
+    click.echo(auth_link)
+    click.echo("After authentication, paste the URL you were redirected to below:")
+    token_input = input("Authentication URL: ")
+    result = ctx_app.outlook_auth_client.complete_authentication(token_input)
+    if result:
+        click.echo(
+            "Authentication completed successfully")
+    else:
+        click.echo("Authentication failed. Please try again.")
+
+
 @cli.command("run")
 @click.pass_context
 def run_command(ctx):
@@ -138,6 +161,11 @@ def run_command(ctx):
 
     ctx_app = ctx.obj["app_ctx"]
     config = ctx.obj["app_config"]
+
+    if not ctx_app.outlook_auth_client.is_authenticated:
+        click.echo("Please authenticate first.")
+        return
+
     command = ProcessNewEmailsCommand(
         run_configuration_dao=ctx_app.run_configuration_dao,
         email_manager=ctx_app.email_manager,
