@@ -38,10 +38,6 @@ def cli(ctx):
     app_ctx = ApplicationContext.init(config)
 
     ctx.obj = {
-        # FIXME: the three following line and their usages should be replaced with the usage of the app_ctx object
-        "action_item_dao": app_ctx.action_item_dao,
-        "email_content_dao": app_ctx.email_content_dao,
-        "execution_report_dao": app_ctx.execution_report_dao,
         "app_ctx": app_ctx,
         "app_config": config,
     }
@@ -51,8 +47,8 @@ def cli(ctx):
 @click.pass_context
 def list_action_items(ctx):
     """List pending action items."""
-    action_item_dao = ctx.obj["action_item_dao"]
-    action_items = action_item_dao.list_action_items()
+    ctx_app = ctx.obj["app_ctx"]
+    action_items = ctx_app.action_item_dao.list_action_items()
     if action_items:
         click.echo("Pending Action Items:")
         for i, ai in enumerate(action_items):
@@ -66,8 +62,8 @@ def list_action_items(ctx):
 @click.pass_context
 def list_emails_cmd(ctx):
     """List stored emails."""
-    email_content_dao: EmailContentDAO = ctx.obj["email_content_dao"]
-    emails = email_content_dao.list_email_contents()
+    ctx_app = ctx.obj["app_ctx"]
+    emails = ctx_app.email_content_dao.list_email_contents()
     if emails:
         click.echo("Stored Emails:")
         for idx, email in enumerate(emails, start=1):
@@ -85,8 +81,8 @@ def list_emails_cmd(ctx):
 @click.pass_context
 def show_email_cmd(ctx, id):
     """Show full details of a selected email."""
-    email_content_dao = ctx.obj["email_content_dao"]
-    email = email_content_dao.get_email_content(id)
+    ctx_app = ctx.obj["app_ctx"]
+    email = ctx_app.email_content_dao.get_email_content(id)
     if email:
         click.echo("Email Details:")
         click.echo(str(email))
@@ -120,8 +116,8 @@ def verify_config(verify):
 @click.pass_context
 def show_run_history_cmd(ctx, num):
     """Show the last N runs of the application."""
-    execution_report_dao = ctx.obj["execution_report_dao"]
-    reports = execution_report_dao.retrieve_last(num)
+    ctx_app = ctx.obj["app_ctx"]
+    reports = ctx_app.execution_report_dao.retrieve_last(num)
     if reports:
         click.echo("Execution Reports:")
         for idx, report in enumerate(reports, start=1):
