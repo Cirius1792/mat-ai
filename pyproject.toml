@@ -31,8 +31,8 @@ packages = ["src/matai", "src/cli"]
 
 [project.scripts]
 # pmai = "cli.pmai:cli"
-pmai="gui.main_gui:_start_gui"
-pmai-cli="cli.cli:cli"
+matai-gui="gui.main_gui:_start_gui"
+matai-cli="cli.cli:cli"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
