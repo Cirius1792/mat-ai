@@ -1,7 +1,10 @@
 from typing import List
 from dataclasses import dataclass
 
-from matai.email_processing.model import ActionItem, EmailContent
+import json
+import os
+from dataclasses import asdict
+from matai.email_processing.model import EmailContent, ActionItem, ActionType, EmailAddress
 
 # This script implements the basic funcitonalities to manage the dataset used to evaluate the application and to run the banchmark using this dataset.
 # The dataset is stored in jsonl format, each line contains a json object describing:
@@ -10,6 +13,7 @@ from matai.email_processing.model import ActionItem, EmailContent
 # When running the benchmark the score is evaluated using an AI Judge that will compare the extracted action item with the expected one.
 # A score between 1 and 5 will be assigned by the judge depending on the correctness of the extracted informations.
 
+
 @dataclass
 class DatasetLine:
     email: EmailContent
@@ -17,20 +21,23 @@ class DatasetLine:
 
 
 class Dataset:
+    def __init__(self, file_path: str = "dataset.jsonl"):
+        """Initialize the Dataset with a file path.
+        Args:
+            file_path (str): The path to the dataset file.
+        """
+        self.dataset_file = file_path
 
     def load(self) -> List[DatasetLine]:
         """Load the dataset from a jsonl file.
-    
+
         Returns:
             List[DatasetLine]: A list of DatasetLine objects containing email content and expected action items.
         """
-        import json, os
-        from matai.email_processing.model import EmailContent, ActionItem, ActionType, EmailAddress
-        dataset_file = "dataset.jsonl"
         lines = []
-        if not os.path.exists(dataset_file):
+        if not os.path.exists(self.dataset_file):
             return []
-        with open(dataset_file, "r", encoding="utf-8") as f:
+        with open(self.dataset_file, "r", encoding="utf-8") as f:
             for line in f:
                 data = json.loads(line)
                 email_data = data.get("email", {})
@@ -38,20 +45,18 @@ class Dataset:
                 email = EmailContent.from_json(email_data)
                 action_item = ActionItem.from_json(action_data)
                 from matai.benchmark.dataset import DatasetLine
-                lines.append(DatasetLine(email=email, expected_action_item=action_item))
+                lines.append(DatasetLine(
+                    email=email, expected_action_item=action_item))
         return lines
 
     def append(self, line: DatasetLine):
         """Append a new line to the dataset.
         The dataset is stored to file before returning.
-    
+
         Args:
             line (DatasetLine): The line to append.
         """
-        import json
-        from dataclasses import asdict
-        from matai.email_processing.model import ActionType
-        dataset_file = "dataset.jsonl"
+        dataset_file = self.dataset_file
 
         def serialize(obj):
             from datetime import datetime

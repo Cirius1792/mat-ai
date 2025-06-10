@@ -4,13 +4,13 @@ from datetime import datetime
 from matai.benchmark.dataset import Dataset, DatasetLine
 from matai.email_processing.model import ActionItem, ActionType, EmailAddress, EmailContent
 import tempfile
-import os
 
 
 class TestDataset(TestCase):
     def setUp(self) -> None:
-        self.temp_file = tempfile.NamedTemporaryFile(delete=False)
+        self.temp_file = tempfile.NamedTemporaryFile()
         self.dataset = Dataset(file_path=self.temp_file.name)
+        self.temp_file.close()
         self.email: EmailContent = EmailContent(message_id='1',
                                                 subject="Kind Reminder",
                                                 sender=EmailAddress.from_string(
@@ -36,8 +36,6 @@ class TestDataset(TestCase):
             metadata={}
         )
 
-    def tearDown(self) -> None:
-        os.remove(self.temp_file.name)
 
     def test_should_add_a_new_entry_to_the_dataset(self):
         stored_entries = self.dataset.load()
