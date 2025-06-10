@@ -60,12 +60,13 @@ class EmailAddress:
 @dataclass
 class Participant:
     alias: str
-    email: Optional[EmailAddress]= None
+    email: Optional[EmailAddress] = None
 
 
 @dataclass
 class EmailContent:
-    CSV_HEADER = ["message_id", "subject", "sender", "recipients", "thread_id", "timestamp", "clean_body"]
+    CSV_HEADER = ["message_id", "subject", "sender",
+                  "recipients", "thread_id", "timestamp", "clean_body"]
 
     message_id: str  # Unique identifier for the email
     subject: str
@@ -108,7 +109,8 @@ class EmailContent:
         """Get cleaned message body with quoted text removed"""
         if self._clean_body is None:
             from .parser import EmailParser
-            self._clean_body = EmailParser.clean_body(self.body, self.message_id)
+            self._clean_body = EmailParser.clean_body(
+                self.body, self.message_id)
         return self._clean_body
 
     def __str__(self) -> str:
@@ -124,6 +126,7 @@ class EmailContent:
             f"Date: {self.timestamp.strftime('%Y-%m-%d %H:%M:%S')}\n"
             f">{divider}"
         )
+
     def to_csv(self) -> List[str]:
         """Convert email content to CSV format returning the csv row ready to be written.
         If the separator character is present in the text fields, they are escaped to avoid problem when writing the csv
@@ -140,7 +143,7 @@ class EmailContent:
 
     def to_json(self, ) -> Dict:
         """Convert email content to JSON serializable format.
-            
+
         """
         return {
             "message_id": self.message_id,
@@ -176,6 +179,7 @@ class ActionType (Enum):
         else:
             raise ValueError(f"Invalid action type: {text}")
 
+
 @dataclass
 class ActionItem:
     """An action item is a call to action extracted from an email.
@@ -183,15 +187,16 @@ class ActionItem:
     """
     action_type: ActionType  # Enum: DEADLINE, TASK, etc.
     description: str
+    confidence_score: float
+    message_id: str
     due_date: Optional[datetime]
     owners: List[Participant]
     waiters: List[Participant]
     metadata: Dict[str, str]
-    confidence_score: float
-    message_id: str
-    id: int=0
+    id: int = 0
 
-    CSV_HEADER= ["id", "message_id", "type", "description", "due_date", "owners", "waiters", "confidence"]
+    CSV_HEADER = ["id", "message_id", "type", "description",
+                  "due_date", "owners", "waiters", "confidence"]
 
     def __str__(self) -> str:
         return (
