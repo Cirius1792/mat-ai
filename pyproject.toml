@@ -33,6 +33,7 @@ packages = ["src/matai", "src/cli", "src/benchmark"]
 # pmai = "cli.pmai:cli"
 matai-gui="gui.main_gui:_start_gui"
 matai-cli="cli.cli:cli"
+mat-dat="matai.benchmark.cli:cli"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
