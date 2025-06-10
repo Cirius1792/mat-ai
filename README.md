@@ -14,7 +14,7 @@ The main goal is to create an assistant that helps you track your deadlines.
 - ✅ **Logging and Configuration**: Includes robust logging and configuration management for easy deployment and maintenance.
 - ✅ **Use the your preferred LLM locally or from a provider**: You can use any OpenAI compliant API server and any model you want
 
-## Use it as CLI tool
+## Use it as a CLI tool
 
 ### Prerequisites
 
@@ -23,7 +23,28 @@ The main goal is to create an assistant that helps you track your deadlines.
 
 ### Run It
 
-1. Start the application by running `uv run mat-ai`.
+You can run the CLI tool using the `uv` package manager:
+
+```bash
+uv run matai-cli <command> [options]
+```
+
+For example:
+
+```bash
+uv run matai-cli authenticate
+uv run matai-cli run
+```
+
+#### Available Commands
+
+- `authenticate` – Authenticate the application with the email server.
+- `run` – Process new emails and extract action items.
+- `list-action-items` – List pending action items.
+- `list-emails` – List stored emails.
+- `show-email <id>` – Show full details of a stored email.
+- `run-history [num]` – Show the last N runs of the application (default: 5).
+- `config --verify <file>` – Verify a configuration file for correctness.
 
 ## Configuration
 You can use the sample config.yml file to configure the tool. 
