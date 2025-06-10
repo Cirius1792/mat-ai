@@ -84,7 +84,9 @@ class EmailContent:
         Generate a unique identifier combining message_id and thread_id
         This ensures uniqueness even across different email threads
         """
-        return f"{self.message_id}_{self.thread_id}"
+        if self.thread_id:
+            return f"{self.message_id}_{self.thread_id}"
+        return self.message_id
 
     @property
     def body(self) -> str:
@@ -134,7 +136,8 @@ class EmailContent:
         return [
             self.message_id,
             self.subject,
-            self.sender.email,
+            self.sender.to_string(),
+            self.body,
             ', '.join(r.email for r in self.recipients),
             self.thread_id,
             self.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
@@ -154,6 +157,46 @@ class EmailContent:
             "timestamp": self.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
             "body": self.body
         }
+    @classmethod
+    def from_json(cls, data: Dict) -> 'EmailContent':
+        """Convert JSON data to EmailContent object."""
+        sender_data = data.get("sender")
+        if isinstance(sender_data, dict):
+            sender = EmailAddress(**sender_data)
+        elif isinstance(sender_data, str):
+            sender = EmailAddress.from_string(sender_data)
+        else: 
+            raise ValueError("Invalid sender format in JSON data")
+
+        recipients_data = data.get("recipients", [])
+        recipients: List[EmailAddress] = []
+        for r in recipients_data:
+            if isinstance(r, dict):
+                recipients.append(EmailAddress(**r))
+            else:
+                recipients.append(EmailAddress.from_string(r))
+
+        thread_id = data.get("thread_id", "")
+        ts = data.get("timestamp")
+        if isinstance(ts, str):
+            try:
+                timestamp = datetime.strptime(ts, '%Y-%m-%d %H:%M:%S')
+            except ValueError:
+                timestamp = datetime.fromisoformat(ts)
+        elif isinstance(ts, datetime):
+            timestamp = ts
+        else:
+            timestamp = datetime.now()
+
+        return cls(
+            message_id=data.get("message_id", ""),
+            subject=data.get("subject", ""),
+            sender=sender,
+            recipients=recipients,
+            thread_id=thread_id,
+            timestamp=timestamp,
+            raw_content=data.get("raw_content", data.get("body", ""))
+        )
 
 
 class ActionType (Enum):
@@ -222,6 +265,29 @@ class ActionItem:
             "confidence_score": self.confidence_score,
             "message_id": self.message_id
         }
+
+    @classmethod
+    def from_json(cls, data:Dict) -> 'ActionItem':
+        """Convert JSON data to ActionItem object."""
+        action_type = ActionType.from_string(data.get("action_type", ""))
+        description = data.get("description", "")
+        confidence_score = data.get("confidence_score", 0.0)
+        message_id = data.get("message_id", "")
+        due_date_str = data.get("due_date")
+        due_date = datetime.strptime(due_date_str, '%Y-%m-%d') if due_date_str else None
+        owners = [Participant(alias=owner) for owner in data.get("owners", [])]
+        waiters = [Participant(alias=waiter) for waiter in data.get("waiters", [])]
+        metadata = data.get("metadata", {})
+        return ActionItem(
+            action_type=action_type,
+            description=description,
+            confidence_score=confidence_score,
+            message_id=message_id,
+            due_date=due_date,
+            owners=owners,
+            waiters=waiters,
+            metadata=metadata
+        )
 
 
 class Priority (Enum):

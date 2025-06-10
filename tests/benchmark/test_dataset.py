@@ -1,8 +1,8 @@
 from unittest import TestCase
 from datetime import datetime
 
-from benchmark.dataset import Dataset, DatasetLine
-from matai.email_processing.model import ActionItem, ActionType, EmailAddress, EmailContent, Participant
+from matai.benchmark.dataset import Dataset, DatasetLine
+from matai.email_processing.model import ActionItem, ActionType, EmailAddress, EmailContent
 
 
 class TestDataset(TestCase):
@@ -25,8 +25,12 @@ class TestDataset(TestCase):
         self.action_item: ActionItem = ActionItem(
             action_type=ActionType.TASK,
             description="Send the requested report in time for the meeting",
-            message_id=email.message_id,
-            confidence_score=1.0
+            message_id=self.email.message_id,
+            confidence_score=1.0,
+            due_date=None,
+            owners=[],
+            waiters=[],
+            metadata={}
         )
 
     def test_should_add_a_new_entry_to_the_dataset(self):
