@@ -2,10 +2,14 @@
 import click
 import sqlite3
 import yaml
+import os
 from matai.dao.interface import EmailContentDAO
 import matai.dao.sqlite as dao
 from matai.manager.sqlite_dao import SQLiteExecutionReportDAO
 from configuration.configuration_service import ConfigurationService, FileConfigStorage
+from configuration.configuration_service import ConfigurationService, FileConfigStorage
+from configuration.application_configuration import ApplicationContext
+from matai.commands.process_new_emails_command import ProcessNewEmailsCommand
 
 DB_PATH = "pmai_sqlite.db"
 
@@ -19,11 +23,27 @@ def init_daos():
 @click.pass_context
 def cli(ctx):
     """Lightweight CLI to view the application database."""
-    action_item_dao, email_content_dao, execution_report_dao = init_daos()
+
+    configuration_path = os.getenv('PMAI_CONFIG_PATH', './config/config.yaml')
+    try:
+        service = ConfigurationService(FileConfigStorage(configuration_path))
+        config = service.retrieve()
+    except FileNotFoundError:
+        click.echo("Error: Configuration file not found.")
+        return
+    except yaml.YAMLError as e:
+        click.echo("Error: Invalid configuration format. " + str(e))
+        return
+
+    app_ctx = ApplicationContext.init(config)
+
     ctx.obj = {
-        "action_item_dao": action_item_dao,
-        "email_content_dao": email_content_dao,
-        "execution_report_dao": execution_report_dao,
+        # FIXME: the three following line and their usages should be replaced with the usage of the app_ctx object
+        "action_item_dao": ctx.app.action_item_dao,
+        "email_content_dao": ctx.email_content_dao,
+        "execution_report_dao": ctx.execution_report_dao,
+        "app_ctx": app_ctx,
+        "app_config": config,
     }
 
 
@@ -115,33 +135,20 @@ def show_run_history_cmd(ctx, num):
 @click.pass_context
 def run_command(ctx):
     """Run processing of new emails using ProcessNewEmailsCommand."""
-    import os, yaml, click
-    from configuration.configuration_service import ConfigurationService, FileConfigStorage
-    configuration_path = os.getenv('PMAI_CONFIG_PATH', './config/config.yaml')
-    try:
-        service = ConfigurationService(FileConfigStorage(configuration_path))
-        config = service.retrieve()
-    except FileNotFoundError:
-        click.echo("Error: Configuration file not found.")
-        return
-    except yaml.YAMLError as e:
-        click.echo("Error: Invalid configuration format. " + str(e))
-        return
 
-    from configuration.application_configuration import ApplicationContext
-    ctx_app = ApplicationContext.init(config)
-
-    from matai.commands.process_new_emails_command import ProcessNewEmailsCommand
+    ctx_app = ctx.obj["app_ctx"]
+    config = ctx.obj["app_config"]
     command = ProcessNewEmailsCommand(
-         run_configuration_dao=ctx_app.run_configuration_dao,
-         email_manager=ctx_app.email_manager,
-         filters=config.filters,
-         integration_manager=ctx_app.integration_manager,
-         execution_report_dao=ctx_app.execution_report_dao,
-         confidence_level=config.confidence_level
+        run_configuration_dao=ctx_app.run_configuration_dao,
+        email_manager=ctx_app.email_manager,
+        filters=config.filters,
+        integration_manager=ctx_app.integration_manager,
+        execution_report_dao=ctx_app.execution_report_dao,
+        confidence_level=config.confidence_level
     )
     command.execute()
-    click.echo("ProcessNewEmailsCommand executed successfully.")
+    click.echo("New emails processed successfully.")
+
 
 if __name__ == "__main__":
     cli()
