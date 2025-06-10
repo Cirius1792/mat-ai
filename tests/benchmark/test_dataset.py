@@ -3,6 +3,8 @@ from datetime import datetime
 
 from matai.benchmark.dataset import Dataset, DatasetLine
 from matai.email_processing.model import ActionItem, ActionType, EmailAddress, EmailContent
+import tempfile
+import os
 
 
 class TestDataset(TestCase):
@@ -33,6 +35,9 @@ class TestDataset(TestCase):
             waiters=[],
             metadata={}
         )
+
+    def tearDown(self) -> None:
+        os.remove(self.temp_file.name)
 
     def test_should_add_a_new_entry_to_the_dataset(self):
         stored_entries = self.dataset.load()
