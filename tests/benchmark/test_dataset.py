@@ -9,8 +9,8 @@ import os
 
 class TestDataset(TestCase):
     def setUp(self) -> None:
-        # Modify the Dataset object initialization to pass it a temporary file path to be used during the test. Then add a tear down method that deletes the created temporary file after the test execution AI!
-        self.dataset = Dataset()
+        self.temp_file = tempfile.NamedTemporaryFile(delete=False)
+        self.dataset = Dataset(file_path=self.temp_file.name)
         self.email: EmailContent = EmailContent(message_id='1',
                                                 subject="Kind Reminder",
                                                 sender=EmailAddress.from_string(
