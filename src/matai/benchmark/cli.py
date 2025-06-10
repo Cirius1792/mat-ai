@@ -8,9 +8,9 @@ def cli():
     """CLI to manage the benchmark dataset."""
     pass
 
-# Add a --dataset-path option to specify the dataset file to be used AI!
 @cli.command("add")
-def add():
+@click.option("--dataset-path", type=click.Path(), default="dataset.jsonl", help="Path to the dataset file")
+def add(dataset_path):
     """Add a new entry to the dataset."""
     # Email content phase
     click.echo("== Email Content Entry ==")
@@ -87,6 +87,6 @@ def add():
         click.echo("Aborted.")
         return
 
-    dataset = Dataset()
+    dataset = Dataset(file_path=dataset_path)
     dataset.append(DatasetLine(email=email, expected_action_item=action_item))
     click.echo(f"Entry added to {dataset.dataset_file}")
