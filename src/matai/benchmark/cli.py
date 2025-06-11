@@ -109,40 +109,6 @@ def add(dataset_path):
         add_more = click.prompt("Add another action item? [y/N]", default="n")
         if add_more.lower() not in ("y", "yes"):
             break
-    action_type = ActionType[action_type_str]
-    description = click.prompt("Description")
-    due_date_str = click.prompt("Due Date (YYYY-MM-DD) or empty", default="", show_default=False)
-    due_date = datetime.strptime(due_date_str, '%Y-%m-%d') if due_date_str else None
-    confidence_score = click.prompt("Confidence Score (0.0-1.0)", type=float, default=0.85)
-    owners = []
-    click.echo("Enter owner aliases (empty to finish):")
-    while True:
-        owner = click.prompt("Owner", default="", show_default=False)
-        if not owner:
-            break
-        owners.append(Participant(alias=owner))
-    waiters = []
-    click.echo("Enter waiter aliases (empty to finish):")
-    while True:
-        waiter = click.prompt("Waiter", default="", show_default=False)
-        if not waiter:
-            break
-        waiters.append(Participant(alias=waiter))
-    metadata = {}
-    action_item = ActionItem(
-        action_type=action_type,
-        description=description,
-        confidence_score=confidence_score,
-        message_id=message_id,
-        due_date=due_date,
-        owners=owners,
-        waiters=waiters,
-        metadata=metadata
-    )
-    click.echo(f"\nConstructed ActionItem:\n{action_item}")
-    if not click.confirm("Append to dataset?"):
-        click.echo("Aborted.")
-        return
 
     dataset = Dataset(file_path=dataset_path)
     for ai in action_items:
