@@ -71,7 +71,41 @@ def add(dataset_path):
     action_items = []
     while True:
         click.echo("\n-- New Action Item --")
-    action_type_str = click.prompt("Action Type", type=click.Choice([t.name for t in ActionType]))
+        action_type_str = click.prompt("Action Type", type=click.Choice([t.name for t in ActionType]))
+        action_type = ActionType[action_type_str]
+        description = click.prompt("Description")
+        due_date_str = click.prompt("Due Date (YYYY-MM-DD) or empty", default="", show_default=False)
+        due_date = datetime.strptime(due_date_str, '%Y-%m-%d') if due_date_str else None
+        confidence_score = click.prompt("Confidence Score (0.0-1.0)", type=float, default=0.85)
+        owners = []
+        click.echo("Enter owner aliases (empty to finish):")
+        while True:
+            owner = click.prompt("Owner", default="", show_default=False)
+            if not owner:
+                break
+            owners.append(Participant(alias=owner))
+        waiters = []
+        click.echo("Enter waiter aliases (empty to finish):")
+        while True:
+            waiter = click.prompt("Waiter", default="", show_default=False)
+            if not waiter:
+                break
+            waiters.append(Participant(alias=waiter))
+        metadata = {}
+        action_item = ActionItem(
+            action_type=action_type,
+            description=description,
+            confidence_score=confidence_score,
+            message_id=message_id,
+            due_date=due_date,
+            owners=owners,
+            waiters=waiters,
+            metadata=metadata
+        )
+        action_items.append(action_item)
+        click.echo(f"\nConstructed ActionItem:\n{action_item}")
+        if not click.confirm("Add another action item?"):
+            break
     action_type = ActionType[action_type_str]
     description = click.prompt("Description")
     due_date_str = click.prompt("Due Date (YYYY-MM-DD) or empty", default="", show_default=False)
