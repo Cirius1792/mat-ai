@@ -3,10 +3,13 @@ from matai.benchmark.dataset import Dataset, DatasetLine
 from matai.email_processing.model import EmailContent, ActionItem, EmailAddress, Participant, ActionType
 from datetime import datetime
 
+
 @click.group()
 def cli():
     """CLI to manage the benchmark dataset."""
     pass
+
+
 @cli.command("show")
 @click.option("--dataset-path", type=click.Path(), default="dataset.jsonl", help="Path to the dataset file")
 def show(dataset_path):
@@ -27,12 +30,14 @@ def show(dataset_path):
     text = "\n\n".join(parts)
     click.echo_via_pager(text)
 
+
 @cli.command("add")
 @click.option("--dataset-path", type=click.Path(), default="dataset.jsonl", help="Path to the dataset file")
 def add(dataset_path):
     """Add a new entry to the dataset."""
     # Email content phase
     click.echo("== Email Content Entry ==")
+    # Make this input optional, on pressing enter, a random id will be generated as uuid AI
     message_id = click.prompt("Message ID")
     subject = click.prompt("Subject")
     sender_str = click.prompt("Sender (e.g. Name <email@domain.com>)")
@@ -44,8 +49,10 @@ def add(dataset_path):
         if not rec:
             break
         recipients.append(EmailAddress.from_string(rec))
+    # Make this input optional, on pressing enter, a random id will be generated as uuid AI
     thread_id = click.prompt("Thread ID", default="")
-    timestamp_str = click.prompt("Timestamp (YYYY-MM-DD HH:MM:SS or ISO)", default="")
+    timestamp_str = click.prompt(
+        "Timestamp (YYYY-MM-DD HH:MM:SS or ISO)", default="")  # Make this input optional, on pressing enter, the current time is used AI!
     if timestamp_str:
         try:
             timestamp = datetime.strptime(timestamp_str, '%Y-%m-%d %H:%M:%S')
@@ -73,12 +80,16 @@ def add(dataset_path):
     action_items = []
     while True:
         click.echo("\n-- New Action Item --")
-        action_type_str = click.prompt("Action Type", type=click.Choice([t.name for t in ActionType]))
+        action_type_str = click.prompt(
+            "Action Type", type=click.Choice([t.name for t in ActionType]))
         action_type = ActionType[action_type_str]
         description = click.prompt("Description")
-        due_date_str = click.prompt("Due Date (YYYY-MM-DD) or empty", default="", show_default=False)
-        due_date = datetime.strptime(due_date_str, '%Y-%m-%d') if due_date_str else None
-        confidence_score = click.prompt("Confidence Score (0.0-1.0)", type=float, default=0.85)
+        due_date_str = click.prompt(
+            "Due Date (YYYY-MM-DD) or empty", default="", show_default=False)
+        due_date = datetime.strptime(
+            due_date_str, '%Y-%m-%d') if due_date_str else None
+        confidence_score = click.prompt(
+            "Confidence Score (0.0-1.0)", type=float, default=0.85)
         owners = []
         click.echo("Enter owner aliases (empty to finish):")
         while True:
