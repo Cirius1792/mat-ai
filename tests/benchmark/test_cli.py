@@ -1,7 +1,5 @@
-import json
 from datetime import datetime
 import pytest
-pytestmark = pytest.mark.timeout(5)
 from click.testing import CliRunner
 from matai.benchmark.cli import cli
 from matai.benchmark.dataset import Dataset, DatasetLine
@@ -39,12 +37,14 @@ def make_sample_entry():
     )
     return DatasetLine(email=email, expected_action_items=[ai])
 
+@pytest.mark.timeout(2)
 def test_show_empty(tmp_dataset):
     runner = CliRunner()
     result = runner.invoke(cli, ["show", "--dataset-path", tmp_dataset])
     assert result.exit_code == 0
     assert "No entries found." in result.output
 
+@pytest.mark.timeout(2)
 def test_show_one_entry(tmp_dataset):
     # pre‐populate dataset
     ds = Dataset(file_path=tmp_dataset)
@@ -57,6 +57,7 @@ def test_show_one_entry(tmp_dataset):
     assert "Action Item:" in result.output
     assert "Description: desc" in result.output
 
+@pytest.mark.timeout(2)
 def test_add_abort(tmp_dataset, monkeypatch):
     # simulate user aborting at the first confirmation
     runner = CliRunner()
@@ -81,6 +82,7 @@ def test_add_abort(tmp_dataset, monkeypatch):
     # dataset still empty
     assert Dataset(file_path=tmp_dataset).load() == []
 
+@pytest.mark.timeout(2)
 def test_add_success(tmp_dataset, monkeypatch):
     runner = CliRunner()
     monkeypatch.setattr("click.edit", lambda **kwargs: "email body")
