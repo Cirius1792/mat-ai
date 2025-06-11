@@ -67,8 +67,10 @@ def add(dataset_path):
         return
 
     # Action item phase
-    # Therefore here we need to allow for inserting of multiple action items AI!
-    click.echo("\n== Action Item Entry ==")
+    click.echo("\n== Action Item Entries ==")
+    action_items = []
+    while True:
+        click.echo("\n-- New Action Item --")
     action_type_str = click.prompt("Action Type", type=click.Choice([t.name for t in ActionType]))
     action_type = ActionType[action_type_str]
     description = click.prompt("Description")
@@ -106,5 +108,6 @@ def add(dataset_path):
         return
 
     dataset = Dataset(file_path=dataset_path)
-    dataset.append(DatasetLine(email=email, expected_action_item=action_item))
-    click.echo(f"Entry added to {dataset.dataset_file}")
+    for ai in action_items:
+        dataset.append(DatasetLine(email=email, expected_action_items=[ai]))
+    click.echo(f"{len(action_items)} entries added to {dataset.dataset_file}")

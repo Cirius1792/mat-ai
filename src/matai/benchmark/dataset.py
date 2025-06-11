@@ -17,8 +17,7 @@ from matai.email_processing.model import EmailContent, ActionItem, ActionType, E
 @dataclass
 class DatasetLine:
     email: EmailContent
-    # We need to modify the content of the dataset to allow loading for a list of ActionItem AI
-    expected_action_item: ActionItem
+    expected_action_items: List[ActionItem]
 
 
 class Dataset:
@@ -42,12 +41,11 @@ class Dataset:
             for line in f:
                 data = json.loads(line)
                 email_data = data.get("email", {})
-                action_data = data.get("expected_action_item", {})
                 email = EmailContent.from_json(email_data)
-                # Here we need to handle the fact that the Action Items are in a list now AI
-                action_item = ActionItem.from_json(action_data)
+                action_data_list = data.get("expected_action_items", [])
+                action_items = [ActionItem.from_json(ai) for ai in action_data_list]
                 lines.append(DatasetLine(
-                    email=email, expected_action_item=action_item))
+                    email=email, expected_action_items=action_items))
         return lines
 
     def append(self, line: DatasetLine):
