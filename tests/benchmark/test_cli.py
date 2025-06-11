@@ -1,6 +1,7 @@
 import json
 from datetime import datetime
 import pytest
+pytestmark = pytest.mark.timeout(5)
 from click.testing import CliRunner
 from matai.benchmark.cli import cli
 from matai.benchmark.dataset import Dataset, DatasetLine
