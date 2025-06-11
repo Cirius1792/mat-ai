@@ -7,6 +7,7 @@ from datetime import datetime
 def cli():
     """CLI to manage the benchmark dataset."""
     pass
+# Add a command show to print all the entries in the dataset in a human readable format. If the entries fill more than the space available in the terminal, implement pagination. to exit the paginated view the user will press the 'q' key. AI!
 
 @cli.command("add")
 @click.option("--dataset-path", type=click.Path(), default="dataset.jsonl", help="Path to the dataset file")
