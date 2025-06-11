@@ -20,7 +20,9 @@ def show(dataset_path):
     for idx, dl in enumerate(lines):
         parts.append(f"Entry {idx+1}/{len(lines)}")
         parts.append(str(dl.email))
-        parts.append(str(dl.expected_action_item))
+        for ai in dl.expected_action_items:
+            parts.append(str(ai))
+            parts.append("")
         parts.append("")
     text = "\n\n".join(parts)
     click.echo_via_pager(text)

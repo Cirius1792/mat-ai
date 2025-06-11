@@ -40,7 +40,7 @@ class TestDataset(TestCase):
     def test_should_add_a_new_entry_to_the_dataset(self):
         stored_entries = self.dataset.load()
         previously_stored = len(stored_entries)
-        dataset_line = DatasetLine(self.email, self.action_item)
+        dataset_line = DatasetLine(self.email, [self.action_item])
         self.dataset.append(dataset_line)
 
         stored_entries = self.dataset.load()
