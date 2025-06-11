@@ -18,6 +18,7 @@ From: $sender
 To: $recipients
 Subject: $subject
 Date: $email_date
+
 $email_content
 </email>
 
@@ -27,6 +28,10 @@ $email_content
    - A deadline is mentioned or can be inferred
 2. For relative deadlines (tomorrow, next week, in 3 days), calculate the actual date using the email date ($email_date)
 3. For incomplete dates (like "March 10" without year), assume the current or next occurrence
+4. Use the same language as the email for descriptions
+5. Return ONLY the JSON object, no additional text
+6. Empty fields use "" for strings, [] for arrays
+7. If no valid tasks found, return {"action_items": []}
 
 ## OUTPUT FORMAT
 Return only a clean JSON object with this structure:
@@ -58,17 +63,11 @@ Return only a clean JSON object with this structure:
 - 0.5-0.6: Task exists but significant details missing
 - Below 0.5: Potential task but highly uncertain
 
-## RESPONSE REQUIREMENTS
-- Return ONLY the JSON object, no additional text
-- Use the same language as the email for descriptions
-- Empty fields use "" for strings, [] for arrays
-- If no valid tasks found, return {"action_items": []}
-
 ## EXAMPLE
 Email: "Hi team, please complete the Q3 report by next Friday. John needs to submit financial data by Wednesday."
 
 Output:
-```
+```json
 {
   "action_items": [
     {
