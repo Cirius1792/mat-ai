@@ -275,8 +275,20 @@ class ActionItem:
         message_id = data.get("message_id", "")
         due_date_str = data.get("due_date")
         due_date = datetime.strptime(due_date_str, '%Y-%m-%d') if due_date_str else None
-        owners = [Participant(alias=owner) for owner in data.get("owners", [])]
-        waiters = [Participant(alias=waiter) for waiter in data.get("waiters", [])]
+        owners = [
+            Participant(
+                alias=o if isinstance(o, str) else o.get("alias", ""),
+                email=None if isinstance(o, str) else o.get("email")
+            )
+            for o in data.get("owners", [])
+        ]
+        waiters = [
+            Participant(
+                alias=o if isinstance(o, str) else o.get("alias", ""),
+                email=None if isinstance(o, str) else o.get("email")
+            )
+            for o in data.get("waiters", [])
+        ]
         metadata = data.get("metadata", {})
         return ActionItem(
             action_type=action_type,
