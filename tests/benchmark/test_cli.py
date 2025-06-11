@@ -102,6 +102,18 @@ def test_add_success(tmp_dataset, monkeypatch):
         "alice",                     # owner
         "",                          # end owners
         "",                          # end waiters
+
+        "y",                         # add one more action items
+
+        # entering action items
+        "TASK",                      # action type
+        "Do something else",              # description
+        "",                          # due_date empty
+        "0.9",                       # confidence
+        "alice",                     # owner
+        "",                          # end owners
+        "",                          # end waiters
+
         "n",                         # no more action items
         "y"                          # confirm append
     ]) + "\n"
@@ -116,3 +128,152 @@ def test_add_success(tmp_dataset, monkeypatch):
     assert ai.action_type == ActionType.TASK
     assert ai.description == "Do something"
     assert ai.confidence_score == 0.9
+
+
+@pytest.mark.timeout(2)
+def test_edit_nonexistent(tmp_dataset):
+    runner = CliRunner()
+    result = runner.invoke(
+        cli, ["edit", "--dataset-path", tmp_dataset, "--id", "noexist"]
+    )
+    assert result.exit_code == 0
+    assert "No entries found for ID: noexist" in result.output
+
+
+@pytest.mark.timeout(2)
+def test_edit_abort(tmp_dataset, monkeypatch):
+    ds = Dataset(file_path=tmp_dataset)
+    ds.append(make_sample_entry())
+    runner = CliRunner()
+    def fake_confirm(prompt=None, default=False):
+        if prompt and "Save changes" in prompt:
+            return False
+        return False
+    monkeypatch.setattr("click.confirm", fake_confirm)
+    monkeypatch.setattr("click.edit", lambda text=None: "edited body")
+    inputs = "\n".join(["", "", "", "", ""]) + "\n"
+    result = runner.invoke(
+        cli,
+        ["edit", "--dataset-path", tmp_dataset, "--id", "m1_t1"],
+        input=inputs,
+    )
+    assert result.exit_code == 0
+    assert "Aborted." in result.output
+    lines = Dataset(file_path=tmp_dataset).load()
+    assert len(lines) == 1
+    assert lines[0].email.raw_content == "hello"
+
+
+@pytest.mark.timeout(2)
+def test_edit_update_subject(tmp_dataset, monkeypatch):
+    ds = Dataset(file_path=tmp_dataset)
+    ds.append(make_sample_entry())
+    runner = CliRunner()
+    def fake_confirm(prompt=None, default=False):
+        if prompt and "Edit recipients" in prompt:
+            return False
+        if prompt and "Edit body" in prompt:
+            return False
+        if prompt and "Save changes" in prompt:
+            return True
+        return False
+    monkeypatch.setattr("click.confirm", fake_confirm)
+    monkeypatch.setattr("click.edit", lambda text=None: "irrelevant")
+    inputs = "\n".join([
+        "New Subject",
+        "",
+        "",
+        "",
+        "",
+    ]) + "\n"
+    result = runner.invoke(
+        cli,
+        ["edit", "--dataset-path", tmp_dataset, "--id", "m1_t1"],
+        input=inputs,
+    )
+    assert result.exit_code == 0
+    lines = Dataset(file_path=tmp_dataset).load()
+    assert lines[0].email.subject == "New Subject"
+
+
+@pytest.mark.timeout(2)
+def test_edit_add_action_item(tmp_dataset, monkeypatch):
+    ds = Dataset(file_path=tmp_dataset)
+    ds.append(make_sample_entry())
+    runner = CliRunner()
+    def fake_confirm(prompt=None, default=False):
+        if prompt and "Edit recipients" in prompt:
+            return False
+        if prompt and "Edit body" in prompt:
+            return False
+        if prompt and "Save changes" in prompt:
+            return True
+        return False
+    monkeypatch.setattr("click.confirm", fake_confirm)
+    monkeypatch.setattr("click.edit", lambda text=None: "")
+    inputs = "\n".join([
+        "",
+        "",
+        "",
+        "",
+        "add",
+        "TASK",
+        "extra",
+        "",
+        "0.7",
+        "bob",
+        "",
+        "",
+    ]) + "\n"
+    result = runner.invoke(
+        cli,
+        ["edit", "--dataset-path", tmp_dataset, "--id", "m1_t1"],
+        input=inputs,
+    )
+    assert result.exit_code == 0
+    lines = Dataset(file_path=tmp_dataset).load()
+    assert len(lines) == 2
+    descs = [ai.description for dl in lines for ai in dl.expected_action_items]
+    assert "extra" in descs
+
+
+@pytest.mark.timeout(2)
+def test_edit_modify_action_item(tmp_dataset, monkeypatch):
+    ds = Dataset(file_path=tmp_dataset)
+    ds.append(make_sample_entry())
+    runner = CliRunner()
+    def fake_confirm(prompt=None, default=False):
+        if prompt and "Edit recipients" in prompt:
+            return False
+        if prompt and "Edit body" in prompt:
+            return False
+        if prompt and "Edit owners" in prompt:
+            return False
+        if prompt and "Edit waiters" in prompt:
+            return False
+        if prompt and "Save changes" in prompt:
+            return True
+        return False
+    monkeypatch.setattr("click.confirm", fake_confirm)
+    monkeypatch.setattr("click.edit", lambda text=None: "")
+    inputs = "\n".join([
+        "",
+        "",
+        "",
+        "",
+        "edit",
+        "1",
+        "TASK",
+        "newdesc",
+        "",
+        "0.8",
+        "",
+    ]) + "\n"
+    result = runner.invoke(
+        cli,
+        ["edit", "--dataset-path", tmp_dataset, "--id", "m1_t1"],
+        input=inputs,
+    )
+    assert result.exit_code == 0
+    lines = Dataset(file_path=tmp_dataset).load()
+    assert lines[0].expected_action_items[0].description == "newdesc"

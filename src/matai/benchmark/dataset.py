@@ -4,7 +4,10 @@ from dataclasses import dataclass
 import json
 import os
 from dataclasses import asdict
-from matai.email_processing.model import EmailContent, ActionItem, ActionType, EmailAddress
+from matai.email_processing.model import EmailContent, ActionItem, ActionType
+import logging
+
+logger = logging.getLogger(__name__)
 
 # This script implements the basic funcitonalities to manage the dataset used to evaluate the application and to run the banchmark using this dataset.
 # The dataset is stored in jsonl format, each line contains a json object describing:
@@ -18,6 +21,13 @@ from matai.email_processing.model import EmailContent, ActionItem, ActionType, E
 class DatasetLine:
     email: EmailContent
     expected_action_items: List[ActionItem]
+
+    def to_json(self) -> dict:
+        """Convert the DatasetLine to a JSON serializable dictionary."""
+        return {
+            "email": self.email.to_json(),
+            "expected_action_items": [ai.to_json() for ai in self.expected_action_items]
+        }
 
 
 class Dataset:
@@ -38,14 +48,19 @@ class Dataset:
         if not os.path.exists(self.dataset_file):
             return []
         with open(self.dataset_file, "r", encoding="utf-8") as f:
-            for line in f:
-                data = json.loads(line)
-                email_data = data.get("email", {})
-                email = EmailContent.from_json(email_data)
-                action_data_list = data.get("expected_action_items", [])
-                action_items = [ActionItem.from_json(ai) for ai in action_data_list]
-                lines.append(DatasetLine(
-                    email=email, expected_action_items=action_items))
+            for i, line in enumerate(f):
+                try:
+                    data = json.loads(line)
+                    email_data = data.get("email", {})
+                    email = EmailContent.from_json(email_data)
+                    action_data_list = data.get("expected_action_items", [])
+                    action_items = [ActionItem.from_json(ai) for ai in action_data_list]
+                    lines.append(DatasetLine(
+                        email=email, expected_action_items=action_items))
+                except Exception as e:
+                    logger.error(f"Error decoding JSON on line {i + 1}: {e}")
+                    raise ValueError(f"Invalid dataset format at line {i+1}. Please check the dataset file.") from e
+
         return lines
 
     def append(self, line: DatasetLine):
@@ -57,14 +72,14 @@ class Dataset:
         """
         dataset_file = self.dataset_file
 
-        def serialize(obj):
-            from datetime import datetime
-            if isinstance(obj, ActionType):
-                return obj.name
-            if isinstance(obj, datetime):
-                return obj.isoformat()
-            raise TypeError(f"Type {type(obj)} not serializable")
 
         with open(dataset_file, "a", encoding="utf-8") as f:
-            json_line = json.dumps(asdict(line), default=serialize)
+            json_line = json.dumps(line.to_json())
             f.write(json_line + "\n")
+
+    def save(self, lines: List[DatasetLine]) -> None:
+        """Save the given dataset lines, overwriting the dataset file."""
+        with open(self.dataset_file, "w", encoding="utf-8") as f:
+            for line in lines:
+                json_line = json.dumps(line.to_json())
+                f.write(json_line + "\n")

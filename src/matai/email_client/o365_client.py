@@ -98,31 +98,34 @@ class O365EmailClient(EmailClientInterface):
 
         # Iterate through all pages of messages
         for msg in messages:  # messages is a Pagination object that handles fetching next pages
-            # Convert sender to EmailAddress
-            sender = EmailAddress.from_string(
-                f"{msg.sender.name} <{msg.sender.address}>")
+            try:
+                # Convert sender to EmailAddress
+                sender = EmailAddress.from_string(
+                    f"{msg.sender.name} <{msg.sender.address}>")
 
-            # Convert recipients to EmailAddress objects
-            recipients = []
-            for recipient in msg.to:
-                recipients.append(EmailAddress.from_string(
-                    f"{recipient.name} <{recipient.address}>"))
+                # Convert recipients to EmailAddress objects
+                recipients = []
+                for recipient in msg.to:
+                    recipients.append(EmailAddress.from_string(
+                        f"{recipient.name} <{recipient.address}>"))
 
-            # Create EmailContent object
-            content = EmailContent(
-                message_id=msg.object_id,  # O365-specific unique message ID
-                subject=msg.subject,
-                sender=sender,
-                recipients=recipients,
-                thread_id=msg.conversation_id,
-                timestamp=msg.received or datetime.now(),
-                raw_content=str(msg)
-            )
-            content.body = msg.body  # This will trigger clean_body generation
-            logger.debug(
-                f"Retrieved message ID={content.message_id}, subject={content.subject}, received={content.timestamp}")
+                # Create EmailContent object
+                content = EmailContent(
+                    message_id=msg.object_id,  # O365-specific unique message ID
+                    subject=msg.subject,
+                    sender=sender,
+                    recipients=recipients,
+                    thread_id=msg.conversation_id,
+                    timestamp=msg.received or datetime.now(),
+                    raw_content=str(msg)
+                )
+                content.body = msg.body  # This will trigger clean_body generation
+                logger.debug(
+                    f"Retrieved message ID={content.message_id}, subject={content.subject}, received={content.timestamp}")
 
-            yield content
+                yield content
+            except: 
+                logger.error(f"Error parsing email having object: {msg.subject}")
 
 
 if __name__ == "__main__":

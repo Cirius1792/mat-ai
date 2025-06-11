@@ -63,7 +63,7 @@ class EmailContentTest(unittest.TestCase):
         self.assertEqual(json_data["sender"], self.email.sender.to_string())
         self.assertEqual(json_data["recipients"], [r.to_string() for r in self.email.recipients])
         self.assertEqual(json_data["thread_id"], self.email.thread_id)
-        self.assertEqual(json_data["timestamp"], self.email.timestamp.strftime('%Y-%m-%d %H:%M:%S'))
+        self.assertEqual(json_data["timestamp"], self.email.timestamp.isoformat())
         self.assertEqual(json_data["body"], self.email.body)
 
     def test_from_json_iso_timestamp(self):

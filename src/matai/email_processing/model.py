@@ -77,7 +77,30 @@ class EmailContent:
     raw_content: str
     _body: Optional[str] = None
     _clean_body: Optional[str] = None
-    # override the equal and hashcode method to ignore the fields _body and _clean_body and add the appropriate test method in the test_model.py script AI!
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, EmailContent):
+            return NotImplemented
+        return (
+            self.message_id == other.message_id and
+            self.subject == other.subject and
+            self.sender == other.sender and
+            self.recipients == other.recipients and
+            self.thread_id == other.thread_id and
+            self.timestamp == other.timestamp and
+            self.raw_content == other.raw_content
+        )
+
+    def __hash__(self) -> int:
+        return hash((
+            self.message_id,
+            self.subject,
+            self.sender,
+            tuple(self.recipients),
+            self.thread_id,
+            self.timestamp,
+            self.raw_content
+        ))
 
     @property
     def unique_id(self) -> str:
@@ -155,7 +178,7 @@ class EmailContent:
             "sender": self.sender.to_string(),
             "recipients": [r.to_string() for r in self.recipients],
             "thread_id": self.thread_id,
-            "timestamp": self.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
+            "timestamp": self.timestamp.isoformat(),
             "body": self.body
         }
 
@@ -264,7 +287,7 @@ class ActionItem:
             "id": self.id,
             "action_type": self.action_type.name,
             "description": self.description,
-            "due_date": self.due_date.strftime('%Y-%m-%d') if self.due_date else None,
+            "due_date": self.due_date.isoformat() if self.due_date else None,
             "owners": [owner.alias for owner in self.owners],
             "waiters": [waiter.alias for waiter in self.waiters],
             "confidence_score": self.confidence_score,
@@ -279,7 +302,7 @@ class ActionItem:
         confidence_score = data.get("confidence_score", 0.0)
         message_id = data.get("message_id", "")
         due_date_str = data.get("due_date")
-        due_date = datetime.strptime(due_date_str, '%Y-%m-%d') if due_date_str else None
+        due_date = datetime.fromisoformat(due_date_str) if due_date_str else None
         owners = [
             Participant(
                 alias=o if isinstance(o, str) else o.get("alias", ""),

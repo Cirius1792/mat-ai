@@ -27,7 +27,7 @@ class ActionItemTest(unittest.TestCase):
         self.assertEqual(self.json_data["id"], 10)
         self.assertEqual(self.json_data["action_type"], "TASK")
         self.assertEqual(self.json_data["description"], "Do something")
-        self.assertEqual(self.json_data["due_date"], "2025-06-15")
+        self.assertEqual(self.json_data["due_date"], "2025-06-15T00:00:00")
         self.assertEqual(self.json_data["owners"], ["alice", "bob"])
         self.assertEqual(self.json_data["waiters"], ["carol"])
         self.assertEqual(self.json_data["confidence_score"], 0.75)
