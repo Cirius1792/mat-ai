@@ -106,7 +106,8 @@ def add(dataset_path):
         )
         action_items.append(action_item)
         click.echo(f"\nConstructed ActionItem:\n{action_item}")
-        if not click.confirm("Add another action item?"):
+        add_more = click.prompt("Add another action item? [y/N]", default="n")
+        if add_more.lower() not in ("y", "yes"):
             break
     action_type = ActionType[action_type_str]
     description = click.prompt("Description")
