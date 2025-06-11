@@ -67,6 +67,7 @@ def add(dataset_path):
         return
 
     # Action item phase
+    # Therefore here we need to allow for inserting of multiple action items AI!
     click.echo("\n== Action Item Entry ==")
     action_type_str = click.prompt("Action Type", type=click.Choice([t.name for t in ActionType]))
     action_type = ActionType[action_type_str]
