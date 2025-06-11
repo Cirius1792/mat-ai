@@ -40,6 +40,7 @@ mat-dat="matai.benchmark.cli:cli"
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 pythonpath = ["src"]
+markers = ["timeout(timeout): Fail test if it runs longer than timeout seconds"]
 
 [dependency-groups]
 dev = [
