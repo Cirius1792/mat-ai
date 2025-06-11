@@ -38,7 +38,7 @@ def add(dataset_path):
     """Add a new entry to the dataset."""
     # Email content phase
     click.echo("== Email Content Entry ==")
-    message_id = click.prompt("Message ID", default="", show_default=False)
+    message_id = click.prompt("Message ID (Optional)", default="", show_default=False)
     if not message_id:
         message_id = str(uuid.uuid4())
     subject = click.prompt("Subject")
@@ -51,10 +51,10 @@ def add(dataset_path):
         if not rec:
             break
         recipients.append(EmailAddress.from_string(rec))
-    thread_id = click.prompt("Thread ID", default="", show_default=False)
+    thread_id = click.prompt("Thread ID (Optional)", default="", show_default=False)
     if not thread_id:
         thread_id = str(uuid.uuid4())
-    timestamp_str = click.prompt("Timestamp (YYYY-MM-DD HH:MM:SS or ISO)", default="")
+    timestamp_str = click.prompt("Timestamp (YYYY-MM-DD HH:MM:SS or ISO) (Optional)", default="")
     if timestamp_str:
         try:
             timestamp = datetime.strptime(timestamp_str, '%Y-%m-%d %H:%M:%S')
@@ -73,7 +73,7 @@ def add(dataset_path):
         raw_content=body
     )
     click.echo(f"\nConstructed EmailContent:\n{email}")
-    if not click.confirm("Proceed to action item entry?"):
+    if not click.confirm("Proceed to action item entry?"): # We want also to support the case in which no action item is expected for the Email Content, therefore if the user enters 'e' the process continues but no action item is stored for this dataset line AI! 
         click.echo("Aborted.")
         return
 
