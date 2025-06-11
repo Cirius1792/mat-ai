@@ -73,15 +73,8 @@ def add(dataset_path):
         raw_content=body
     )
     click.echo(f"\nConstructed EmailContent:\n{email}")
-    entry_choice = click.prompt("Proceed to action item entry? [y/n/e]", default="y")
-    if entry_choice.lower() in ("n", "no"):
+    if not click.confirm("Proceed to action item entry?"):
         click.echo("Aborted.")
-        return
-    elif entry_choice.lower() == "e":
-        # no action items for this email
-        dataset = Dataset(file_path=dataset_path)
-        dataset.append(DatasetLine(email=email, expected_action_items=[]))
-        click.echo("No action items added for this email.")
         return
 
     # Action item phase
@@ -129,6 +122,10 @@ def add(dataset_path):
         add_more = click.prompt("Add another action item? [y/N]", default="n")
         if add_more.lower() not in ("y", "yes"):
             break
+
+    if not click.confirm("Append entries?"):
+        click.echo("Aborted.")
+        return
 
     dataset = Dataset(file_path=dataset_path)
     for ai in action_items:
