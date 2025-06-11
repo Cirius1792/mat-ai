@@ -1,8 +1,122 @@
+# Project Scope
+
+Build a python application that reads and analyse emails to help the user keep track of its tasks.
+When an email contains an explicit request to perform a task, it will be extracted and stored on a kanban board, like trello. 
+
+
+## 🚨 MANDATORY WORKFLOW - NO EXCEPTIONS 🚨
+
+**CRITICAL**: After EVERY single code change, you MUST run both test and quality scripts. This is NON-NEGOTIABLE.
+
+### Required Commands After Every Change
+
+```bash
+# 1. ALWAYS run tests first - NO EXCEPTIONS
+uv run pytest 
+
+# 2. ALWAYS run quality checks - NO EXCEPTIONS
+uv run pyright
+```
+
+### Workflow Enforcement Rules
+
+1. **NEVER proceed to the next task** until both `uv run pytest` and `uv run pyright` pass
+2. **NEVER skip this workflow** - even for "small changes" or "quick fixes"
+3. **ALWAYS run the full test suite** - no selective testing
+4. **ALWAYS verify quality standards** - no exceptions for any file type
+
+### Quality Gates - ALL Must Pass
+
+- ✅ **All tests pass**: `uv run pytest` returns success
+- ✅ **No linting errors**: linter finds no issues
+- ✅ **Proper formatting**: Prettier formatting is applied
+- ✅ **No console warnings**: All console usage is intentional
+- ✅ **Functional patterns**: Code follows functional programming constraints
+
+### Failure Response Protocol
+
+If ANY quality gate fails:
+
+1. **STOP** all other work immediately
+2. **FIX** the failing quality check first
+3. **RE-RUN** both test and quality scripts
+4. **ONLY THEN** proceed with next task
+
+## Development Approach
+
+## Project Overview
+Take a look at the pyproject.toml for the description of the application and the dependency used. 
+
+
+## Core Requirements
+
+### Authentication
+
+### Web Scraping
+
+
+### Content Processing
+
+
+### File Management
+
+
+## Technical Constraints
+
+### Code Style Requirements
+
+- **MANDATORY**: Use vanilla python as much as possible and suggest for new dependency only if extremely necessaire
+- **MANDATORY**: Implement object oriented programming patterns throughout
+- **MANDATORY**: Use Inversion of Control pattern as much as possible
+- **MANDATORY**: Use type hints for every method signature
+- No duplicate imports
+
+### Architecture
+
+Modular design with separate files for different concerns:
+
+- `src/auth.js` - Google OAuth handling
+- `src/scraper.js` - Medium content extraction
+- `src/converter.js` - HTML to markdown conversion
+- `src/storage.js` - File system operations
+- `src/config.js` - Configuration management
+- `src/logger.js` - Logging utilities
+- `src/main.js` - Application orchestration
+
+Use dependency injection patterns and implement proper error handling.
+
+
+### CLI Interface
+
+ 1 matai-cli (defined in src/cli/cli.py)
+   – authenticate
+   Launches the O365 OAuth flow (opens consent URL, waits for token).
+   – run
+   Fetches new emails, parses them via the LLM, stores results, and (optionally) pushes tasks to your Trello
+   board.
+   – run-history [--num N]
+   Shows the last N runs (timestamps, status, summary reports).
+   – list-emails
+   Lists all stored emails (IDs, subjects, senders, dates) in the SQLite DB.
+   – show-email
+   Prints the full details (cleaned body, raw body, recipients, etc.) of the email with the given ID.
+   – list-action-items
+   Lists all action items extracted so far (ID, type, description, due date, owners, confidence).
+   – config [--verify PATH]
+   Loads your YAML config, validates its schema (or other rules), and prints errors or success.
+ 2 mat-dat (the benchmark CLI in src/matai/benchmark/cli.py)
+   – show [--dataset-path PATH]
+   Opens your JSONL “gold-standard” dataset in a pager, showing each email and its expected action items.
+   – add [--dataset-path PATH]
+   Walks you through interactively entering a new email + one or more expected action items, then appends them to
+   the JSONL dataset.
+
+
 # Development Best Practices and Guidelines
 
 _A fusion of Kent Beck's pragmatism with Uncle Bob's discipline._
 
----
+**CRITICAL**: Follow TDD methodology strictly:
 
 ## 1. Embrace Simplicity and Incremental Design
 - Keep designs as simple as possible—no more, no less.
@@ -66,5 +180,3 @@ _A fusion of Kent Beck's pragmatism with Uncle Bob's discipline._
 - Encourage knowledge sharing: brown-bag sessions, internal wikis, mentoring.
 - Experiment with new approaches incrementally; validate with real feedback.
 
----
-By internalizing these principles—drawing from Kent Beck's evolutionary design and Uncle Bob's discipline—you can craft software that is robust, adaptable, and a pleasure to maintain.
