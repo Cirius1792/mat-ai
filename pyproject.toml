@@ -1,7 +1,7 @@
 [project]
 name = "matai"
 version = "0.1.0"
-description = "Add your description here"
+description = "Matai is a Python‐based “email to action‐item” automation framework. It can connect to your inbox (via O365), fetch and clean raw emails, and—using an OpenAI LLM—extract structured action items (type, description, due date, owners, etc.). Extracted emails and tasks are stored in a SQLite database, and actionable items can be posted automatically to a Trello board. All connection details (email, board, filters, LLM credentials) live in a YAML config, and you can drive the system via a CLI (e.g. “process-new-emails”, “list-action-items”, plus a benchmarking “add”/“show” tool) or a NiceGUI web interface. Under the hood it uses DAO abstractions, a central ApplicationContext for run configurations and execution reports, and a pluggable configuration service—making it easy to extend to other clients, boards or storage back ends."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
