@@ -73,8 +73,15 @@ def add(dataset_path):
         raw_content=body
     )
     click.echo(f"\nConstructed EmailContent:\n{email}")
-    if not click.confirm("Proceed to action item entry?"): # We want also to support the case in which no action item is expected for the Email Content, therefore if the user enters 'e' the process continues but no action item is stored for this dataset line AI! 
+    entry_choice = click.prompt("Proceed to action item entry? [y/n/e]", default="y")
+    if entry_choice.lower() in ("n", "no"):
         click.echo("Aborted.")
+        return
+    elif entry_choice.lower() == "e":
+        # no action items for this email
+        dataset = Dataset(file_path=dataset_path)
+        dataset.append(DatasetLine(email=email, expected_action_items=[]))
+        click.echo("No action items added for this email.")
         return
 
     # Action item phase
