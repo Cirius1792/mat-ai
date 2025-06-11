@@ -2,6 +2,7 @@ import click
 from matai.benchmark.dataset import Dataset, DatasetLine
 from matai.email_processing.model import EmailContent, ActionItem, EmailAddress, Participant, ActionType
 from datetime import datetime
+import uuid
 
 
 @click.group()
@@ -37,8 +38,9 @@ def add(dataset_path):
     """Add a new entry to the dataset."""
     # Email content phase
     click.echo("== Email Content Entry ==")
-    # Make this input optional, on pressing enter, a random id will be generated as uuid AI
-    message_id = click.prompt("Message ID")
+    message_id = click.prompt("Message ID", default="", show_default=False)
+    if not message_id:
+        message_id = str(uuid.uuid4())
     subject = click.prompt("Subject")
     sender_str = click.prompt("Sender (e.g. Name <email@domain.com>)")
     sender = EmailAddress.from_string(sender_str)
@@ -49,10 +51,10 @@ def add(dataset_path):
         if not rec:
             break
         recipients.append(EmailAddress.from_string(rec))
-    # Make this input optional, on pressing enter, a random id will be generated as uuid AI
-    thread_id = click.prompt("Thread ID", default="")
-    timestamp_str = click.prompt(
-        "Timestamp (YYYY-MM-DD HH:MM:SS or ISO)", default="")  # Make this input optional, on pressing enter, the current time is used AI!
+    thread_id = click.prompt("Thread ID", default="", show_default=False)
+    if not thread_id:
+        thread_id = str(uuid.uuid4())
+    timestamp_str = click.prompt("Timestamp (YYYY-MM-DD HH:MM:SS or ISO)", default="")
     if timestamp_str:
         try:
             timestamp = datetime.strptime(timestamp_str, '%Y-%m-%d %H:%M:%S')
