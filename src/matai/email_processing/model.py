@@ -77,6 +77,7 @@ class EmailContent:
     raw_content: str
     _body: Optional[str] = None
     _clean_body: Optional[str] = None
+    # override the equal and hashcode method to ignore the fields _body and _clean_body and add the appropriate test method in the test_model.py script AI!
 
     @property
     def unique_id(self) -> str:
@@ -157,6 +158,7 @@ class EmailContent:
             "timestamp": self.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
             "body": self.body
         }
+
     @classmethod
     def from_json(cls, data: Dict) -> 'EmailContent':
         """Convert JSON data to EmailContent object."""
@@ -252,6 +254,9 @@ class ActionItem:
             f"  Waiters: {', '.join(p.alias for p in self.waiters)}\n"
             f"  Confidence: {self.confidence_score}\n"
         )
+
+    def __asdict__(self) -> Dict:
+        return self.to_json()
 
     def to_json(self) -> Dict:
         """Convert action item to JSON serializable format."""
