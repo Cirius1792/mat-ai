@@ -79,3 +79,37 @@ def test_add_abort(tmp_dataset, monkeypatch):
     assert "Aborted." in result.output
     # dataset still empty
     assert Dataset(file_path=tmp_dataset).load() == []
+
+def test_add_success(tmp_dataset, monkeypatch):
+    runner = CliRunner()
+    monkeypatch.setattr("click.edit", lambda **kwargs: "email body")
+    monkeypatch.setattr("click.confirm", lambda prompt=True: True)
+    inputs = "\n".join([
+        "m3",                        # message_id
+        "Subj2",                     # subject
+        "foo2@bar.com",              # sender
+        "",                          # end recipients
+        "thread-2",                  # thread_id
+        "2025-06-11 10:00:00",       # timestamp
+        # entering action items
+        "TASK",                      # action type
+        "Do something",              # description
+        "",                          # due_date empty
+        "0.9",                       # confidence
+        "alice",                     # owner
+        "",                          # end owners
+        "",                          # end waiters
+        "n",                         # no more action items
+        "y"                          # confirm append
+    ]) + "\n"
+    result = runner.invoke(cli, ["add", "--dataset-path", tmp_dataset], input=inputs)
+    assert result.exit_code == 0
+    ds_lines = Dataset(file_path=tmp_dataset).load()
+    assert len(ds_lines) == 1
+    dl = ds_lines[0]
+    assert dl.email.message_id == "m3"
+    assert dl.email.body == "email body"
+    ai = dl.expected_action_items[0]
+    assert ai.action_type == ActionType.TASK
+    assert ai.description == "Do something"
+    assert ai.confidence_score == 0.9
