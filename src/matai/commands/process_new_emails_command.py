@@ -25,6 +25,7 @@ class ProcessNewEmailsCommand:
         self.execution_report_dao : ExecutionReportDAO = execution_report_dao
 
     def execute(self):
+        # Add a meaningful documentation to this method specifiyng all the side effects that it triggers during the execution, for example the update of the run hystory AI!
         start_time = time.perf_counter()
         run_configuration = self.run_configuration_dao.retrieve_last()
 
