@@ -9,6 +9,8 @@ from matai.manager.models import ExecutionReport, RunConfiguration, RunStatus
 logger = logging.getLogger(__name__)
 
 
+from datetime import datetime
+
 class ProcessNewEmailsCommand:
     def __init__(self, run_configuration_dao : RunConfigurationDAO,
                  email_manager: EmailManager,
@@ -25,7 +27,7 @@ class ProcessNewEmailsCommand:
         self.execution_report_dao : ExecutionReportDAO = execution_report_dao
 
     def execute(self):
-        """Execute processing of new emails and trigger side effects:
+        """Execute processing of new emails and:
         - Retrieve and update the last run configuration (run history)
         - Fetch and filter new emails via EmailManager using configured filters
         - For each email, create Trello tasks via IntegrationManager if confidence ≥ threshold
@@ -60,6 +62,8 @@ class ProcessNewEmailsCommand:
                 self.integration_manager.create_tasks(actionable_item)
                 self.email_manager.store_processed_emails([actionable_item])
 
+        # update run configuration timestamp after processing, so next run filters newer emails
+        run_configuration.last_run_time = datetime.now()
         self.run_configuration_dao.store(run_configuration)
         # Store Execution Report
         elapsed_time = time.perf_counter() - start_time
