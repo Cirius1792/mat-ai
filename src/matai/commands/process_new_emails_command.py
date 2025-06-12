@@ -25,7 +25,13 @@ class ProcessNewEmailsCommand:
         self.execution_report_dao : ExecutionReportDAO = execution_report_dao
 
     def execute(self):
-        # Add a meaningful documentation to this method specifiyng all the side effects that it triggers during the execution, for example the update of the run hystory AI!
+        """Execute processing of new emails and trigger side effects:
+        - Retrieve and update the last run configuration (run history)
+        - Fetch and filter new emails via EmailManager using configured filters
+        - For each email, create Trello tasks via IntegrationManager if confidence ≥ threshold
+        - Store processed emails and their action items
+        - Persist updated run configuration and execution report
+        """
         start_time = time.perf_counter()
         run_configuration = self.run_configuration_dao.retrieve_last()
 
