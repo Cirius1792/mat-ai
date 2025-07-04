@@ -131,5 +131,10 @@ def load_config_from_yaml(file_path='config.yaml') -> Config:
     """
     logger.debug(f"Loading config from {file_path}")
     with open(file_path, 'r') as file:
-        config_dict = yaml.safe_load(file)
+        try:
+            config_dict = yaml.safe_load(file)
+        except yaml.constructor.ConstructorError:
+            # Fallback for legacy YAML files containing Python-specific tags
+            file.seek(0)
+            config_dict = yaml.unsafe_load(file)
         return Config.from_dict(config_dict)
