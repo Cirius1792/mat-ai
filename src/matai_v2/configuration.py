@@ -3,7 +3,9 @@ from abc import ABC
 from typing import Dict, List
 from dataclasses import dataclass, field
 
-import logging 
+import logging
+
+from matai_v2.trello import TrelloClient
 logger = logging.getLogger(__name__)
 
 
@@ -16,12 +18,7 @@ class OutlookConfig:
 
 
 @dataclass
-class BoardConfig(ABC):
-    name: str = ""
-
-
-@dataclass
-class TrelloConfig(BoardConfig):
+class TrelloConfig():
     api_key: str = ""
     api_token: str = ""
     board: str = ""
@@ -40,18 +37,20 @@ class DatabaseConfig:
     host: str = ""
     port: int = 5432
 
+
 @dataclass
-class LLMConfig: 
+class LLMConfig:
     host: str = ""
     model: str = ""
     api_key: str = ""
     provider: str = ""
 
+
 @dataclass
 class Config:
     # database: DatabaseConfig
     outlook_config: OutlookConfig = field(default_factory=OutlookConfig)
-    # board: Dict[str, BoardConfig]
+    trello_config: TrelloConfig = field(default_factory=TrelloConfig)
     # filters: FiltersConfig
     llm_config: LLMConfig = field(default_factory=LLMConfig)
    # confidence_level: float = 0.85
@@ -61,7 +60,7 @@ class Config:
         return {
             # 'database': self.database.__dict__,
             'outlook_config': self.outlook_config.__dict__,
-            # 'board': {k: v.__dict__ for k, v in self.board.items()},
+            'trello_config': self.trello_config.__dict__,
             # 'filters': self.filters.__dict__,
             # 'llm_config': self.llm_config.__dict__,
             # 'confidence_level': self.confidence_level
@@ -72,7 +71,7 @@ class Config:
         """Create config from dictionary data"""
         email_configs = OutlookConfig(**data['outlook_config'])
 
-        # board_configs = {}
+        trello_config = TrelloConfig(**data['trello_config'])
         # for k, v in data['board'].items():
         #     if k == 'trello':
         #         board_configs[k] = TrelloConfig(**v)
@@ -83,7 +82,7 @@ class Config:
         # filters = FiltersConfig()
         # if 'filters' in data:
         #     filters = FiltersConfig(**data['filters'])
-        # llm_config = LLMConfig(host="", 
+        # llm_config = LLMConfig(host="",
         #                        model="",
         #                        api_key=""
         #                        )
@@ -93,14 +92,14 @@ class Config:
         return cls(
             # database=database_config,
             outlook_config=email_configs,
-            # board=board_configs,
+            trello_config=trello_config,
             # filters=filters,
             llm_config=llm_config,
             # confidence_level=data['confidence_level']
         )
 
 
-def save_config_to_yaml(config:Config, file_path='config.yaml'):
+def save_config_to_yaml(config: Config, file_path='config.yaml'):
     """Save configuration to YAML file
 
     Args:
@@ -119,6 +118,7 @@ def save_config_to_yaml(config:Config, file_path='config.yaml'):
     with open(file_path, 'w') as file:
         yaml.dump(config.to_dict(), file, default_flow_style=False)
 
+
 def load_config_from_yaml(file_path='config.yaml') -> Config:
     """Load configuration from a YAML file.
 
@@ -136,5 +136,3 @@ def load_config_from_yaml(file_path='config.yaml') -> Config:
     with open(file_path, 'r') as file:
         config_dict = yaml.safe_load(file)
         return Config.from_dict(config_dict)
-
-

@@ -5,6 +5,9 @@ import requests
 from dataclasses import dataclass
 from urllib.parse import urlencode
 
+from matai_v2.email import EmailContent
+from matai_v2.processor import ActionItem
+
 
 @dataclass
 class BoardList:
@@ -67,7 +70,9 @@ class Board:
     name: str
     url: str
 
+
 logger = logging.getLogger(__name__)
+
 
 class TrelloClient:
     AUTH_URL = "https://trello.com/1/authorize?"
@@ -112,7 +117,8 @@ class TrelloClient:
         url = f"{self.BASE_URL}/members/me/boards?fields=name,url&key={self.api_key}&token={self._token}"
         response = requests.get(url)
         if not response.ok:
-            raise Exception(f"Failed to fetch boards: {response.status_code} {response.text}")
+            raise Exception(
+                f"Failed to fetch boards: {response.status_code} {response.text}")
         boards_json = response.json()
         return [Board(id=board["id"], name=board["name"], url=board["url"]) for board in boards_json]
 
@@ -143,7 +149,8 @@ class TrelloClient:
             params=query
         )
         if not response.ok:
-            raise Exception(f"Failed to fetch lists: {response.status_code} {response.text}")
+            raise Exception(
+                f"Failed to fetch lists: {response.status_code} {response.text}")
         lists_json = response.json()
         return [self.map_list(board_list) for board_list in lists_json]
 
@@ -174,7 +181,8 @@ class TrelloClient:
             params=query
         )
         if not response.ok:
-            raise Exception(f"Failed to create list: {response.status_code} {response.text}")
+            raise Exception(
+                f"Failed to create list: {response.status_code} {response.text}")
 
         response_json = response.json()
 
@@ -216,7 +224,8 @@ class TrelloClient:
             data=body
         )
         if not response.ok:
-            raise Exception(f"Failed to create card: {response.status_code} {response.text}")
+            raise Exception(
+                f"Failed to create card: {response.status_code} {response.text}")
         response_json = response.json()
         return self.map_card(response_json)
 
@@ -266,4 +275,75 @@ class TrelloClient:
         )
 
 
+logger = logging.getLogger(__name__)
 
+
+class TrelloBoardManager:
+    def __init__(self, client: TrelloClient,
+                 board_id: str,
+                 app_board: str = "Mantis"):
+        self._client = client
+        self._board_id = board_id
+        self._app_board = app_board
+        self._list_id = None
+
+    @property
+    def list_id(self) -> Optional[str]:
+        return self._list_id
+
+    @list_id.setter
+    def list_id(self, value):
+        self._list_id = value
+
+    def _create_card_description(self, subject: str, body: str) -> str:
+        return f"Thread Subject: {subject}\nOriginal Message: \n{body}"
+
+    def setup(self):
+        """
+        Set up the target board by ensuring the presence of a specific list.
+
+        This method checks if the target board already contains a list named
+        according to the `self._app_board` attribute. If the list does not exist,
+        it creates a new list with that name. 
+        The list ID is stored in `self.list_id`.
+        """
+        # Check if the target board already has the mantis list
+        board_lists = self._client.lists(self._board_id)
+        is_configured = any(
+            [board_list.name == self._app_board for board_list in board_lists])
+
+        # If there is no mantis list, it creates it
+        if not is_configured:
+            logger.info("No list %s found in board %s. Creating it...",
+                        self._app_board, self._board_id)
+            default_list = self._client.create_list(self._board_id, "Mantis")
+            self.list_id = default_list.id
+            logger.info("List %s created with ID %s",
+                        self._app_board, self.list_id)
+        else:
+            self.list_id = next(
+                board_list.id for board_list in board_lists if board_list.name == self._app_board)
+            assert self.list_id is not None, "List ID must be set before creating tasks"
+            logger.info("List %s found with ID %s",
+                        self._app_board, self.list_id)
+
+    def _create_card_name(self, action_item: ActionItem) -> str:
+        return f"{action_item.action_type}: {action_item.description}"
+
+    def create_tasks(self, email: EmailContent, action_items: List[ActionItem]):
+        if self.list_id is None:
+            self.setup()
+
+        assert self.list_id is not None, "List ID must be set before creating tasks"
+        for action_item in action_items:
+            description = self._create_card_description(
+                email.subject, email.body)
+            name = self._create_card_name(action_item)
+            due_date = action_item.due_date if action_item.due_date else None
+            logger.info("Creating card in list %s with name %s",
+                        self._app_board, name)
+            logger.info("Card description: %s", description)
+            card = self._client.create_card(
+                self.list_id, name, description, due_date)
+            logger.info("Created card %s in list %s",
+                        card.name, self._app_board)

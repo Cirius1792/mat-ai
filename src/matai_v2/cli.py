@@ -5,6 +5,8 @@ from datetime import datetime, timedelta
 
 from matai_v2.configuration import load_config_from_yaml
 from matai_v2.context import ApplicationContext
+from matai_v2.trello import TrelloBoardManager
+
 
 @click.group()
 @click.pass_context
@@ -23,7 +25,7 @@ def cli(ctx):
         click.echo("Error: Invalid configuration format. " + str(e))
         return
 
-    app_ctx:ApplicationContext = ApplicationContext.init(config)
+    app_ctx: ApplicationContext = ApplicationContext.init(config)
 
     ctx.obj = {
         "app_ctx": app_ctx,
@@ -53,23 +55,47 @@ def authenticate_command(ctx):
     else:
         click.echo("Authentication failed. Please try again.")
 
-@cli.command("run",short_help="Run the application to process new emails")
+
+@cli.command("run", short_help="Run the application to process new emails")
 @click.argument("days", type=int, default=2)
 @click.pass_context
 def run(ctx, days):
     """Run the application processing the new emails not already processed and storing the identified action item on the given board. 
     The emails are retrieved in the last n days, where n can be configured by passing the appropriate parameter. If no configuration is provided, the emails in the last 2 days are analysed. 
     """
-    ctx_app = ctx.obj["app_ctx"]
+    ctx_app: ApplicationContext = ctx.obj["app_ctx"]
     if not ctx_app.outlook_auth_client.is_authenticated:
         click.echo("Please authenticate first using the 'authenticate' command.")
         return
     try:
+
+        # Initialize the Trello board manager with the configured Trello client and board
+        trello_manager = TrelloBoardManager(
+            ctx_app.trello_client, ctx_app.config.trello_config.board)
+        trello_manager.setup()
+
         # Calculate the start date taking the current date time and then subtracting the days variable
         click.echo(f"Processing emails from the last {days} days...")
         start_date = datetime.now() - timedelta(days=days)
 
-        ctx_app.email_client.read_messages(start_date=start_date)
+        # Retrieve emails from the Outlook client
+        emails = ctx_app.outlook_email_client.read_messages(
+            start_date=start_date)
+        # TODO: Filter email to avoid already processed once
+        for email in emails:
+            click.echo(
+                f"Processing email: {email.subject} from {email.sender}")
+            # Process each email to identify action items
+            action_items = ctx_app.processor.process_email(email.message_id,
+                                                           email.subject,
+                                                           email.sender.email,
+                                                           [recipient.email for recipient in email.recipients],
+                                                           email.timestamp,
+                                                           email.body)
+            # Store action items into the trello board
+            trello_manager.create_tasks(email, action_items)
+
+            # TODO: store the id of the processed email
+
     except Exception as e:
         click.echo(f"Error running the application: {e}")
-
