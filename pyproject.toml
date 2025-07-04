@@ -27,3 +27,6 @@ test = [
     "behave>=1.2.6",
     "pytest>=8.4.1",
 ]
+dev = [
+    "pyright>=1.1.402",
+]
