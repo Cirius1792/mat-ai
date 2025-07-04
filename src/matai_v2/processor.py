@@ -259,8 +259,13 @@ class EmailProcessor:
         Process an email and extract action items.
 
         Args:
-            email_content: Structured email content including body, subject, and metadata
-
+            - message_id: Unique identifier for the email
+            - subject: Subject of the email
+            - sender: Email address of the sender
+            - recipients: List of email addresses of the recipients
+            - email_date: Date and time the email was sent
+            - body: Body of the email
+            - max_retries: Number of retries for LLM processing in case of failure
         Returns:
             List of extracted action items with confidence scores
         """
