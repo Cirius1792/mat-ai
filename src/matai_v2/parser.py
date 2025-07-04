@@ -98,41 +98,41 @@ def _convert_html_to_text(text: str) -> str:
             
         # Replace common HTML tags with newlines
         for br in soup.find_all('br'):
-            br.replace_with('\n')
+            br.replace_with('\n')  # type: ignore
             
         # Add newlines after block elements
         for tag in soup.find_all(['p', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'li']):
-            tag.append('\n')
+            tag.append('\n')  # type: ignore
             
         # Add double newlines after larger structural elements
         for tag in soup.find_all(['tr', 'table']):
-            tag.append('\n\n')
+            tag.append('\n\n')  # type: ignore
         
         # Remove elements with href attributes that might contain email addresses and links
         for a in soup.find_all('a', href=True):
             # If it's an email link, just keep the email text
-            if 'mailto:' in a['href']:
-                email = a['href'].replace('mailto:', '')
-                a.replace_with(email)
+            if 'mailto:' in a['href']:  # type: ignore
+                email = a['href'].replace('mailto:', '')  # type: ignore
+                a.replace_with(email)  # type: ignore
             else:
                 # For other links, keep the link text
-                a.replace_with(a.get_text())
+                a.replace_with(a.get_text())  # type: ignore
         
         # Handle lingering href attributes that might cause detection in has_html_content
         for tag in soup.find_all(attrs={'href': True}):
-            del tag['href']
+            del tag['href']  # type: ignore
             
         # Remove style attributes which are often detected by has_html_content
         for tag in soup.find_all(attrs={'style': True}):
-            del tag['style']
+            del tag['style']  # type: ignore
             
         # Remove class attributes
         for tag in soup.find_all(attrs={'class': True}):
-            del tag['class']
+            del tag['class']  # type: ignore
             
         # Remove target attributes
         for tag in soup.find_all(attrs={'target': True}):
-            del tag['target']
+            del tag['target']  # type: ignore
             
         # Extract text content
         text_content = soup.get_text()
