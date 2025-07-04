@@ -34,10 +34,10 @@ class DatabaseConfig:
 
 @dataclass
 class LLMConfig:
+    # TODO: all the fields should be mandatory
     host: str = ""
     model: str = ""
     api_key: str = ""
-    provider: str = ""
 
 
 @dataclass
@@ -157,4 +157,7 @@ def load_config_from_yaml(file_path='config.yaml') -> Config:
             # Fallback for legacy YAML files containing Python-specific tags
             file.seek(0)
             config_dict = yaml.unsafe_load(file)
-        return Config.from_dict(config_dict)
+        config = Config.from_dict(config_dict)
+        logger.info("Loaded configuration: %s", config)
+        return config
+

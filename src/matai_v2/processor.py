@@ -327,5 +327,6 @@ class EmailProcessor:
                 if attempt == max_retries:
                     logger.error(
                         f"LLM processing failed {max_retries} times with error: {e}")
+                    logger.error(f"Endpoint: {self._client._base_url}")
                     raise e
         return action_items

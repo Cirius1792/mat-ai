@@ -61,12 +61,10 @@ def test_dataclass_defaults_and_values():
     assert llm.host == ""
     assert llm.model == ""
     assert llm.api_key == ""
-    assert llm.provider == ""
-    llm2 = LLMConfig(host="h", model="m", api_key="k", provider="p")
+    llm2 = LLMConfig(host="h", model="m", api_key="k")
     assert llm2.host == "h"
     assert llm2.model == "m"
     assert llm2.api_key == "k"
-    assert llm2.provider == "p"
 
 
 def test_config_to_dict_default_keys_and_values():
@@ -97,7 +95,7 @@ def test_config_from_dict_minimal_and_full():
         "database": {"path": "db2.sqlite"},
         "outlook_config": {"tenant_id": "t", "client_id": "c", "client_secret": "s", "redirect_uri": "ru"},
         "trello_config": {"api_key": "k", "api_token": "tok", "board": "b"},
-        "llm_config": {"host": "h", "model": "m", "api_key": "ak", "provider": "prov"},
+        "llm_config": {"host": "h", "model": "m", "api_key": "ak", },
     }
     cfg_full = Config.from_dict(full)
     assert cfg_full.database.path == "db2.sqlite"
@@ -111,7 +109,6 @@ def test_config_from_dict_minimal_and_full():
     assert cfg_full.llm_config.host == "h"
     assert cfg_full.llm_config.model == "m"
     assert cfg_full.llm_config.api_key == "ak"
-    assert cfg_full.llm_config.provider == "prov"
 
 
 @pytest.mark.parametrize("missing", ["outlook_config", "trello_config"])
@@ -156,7 +153,7 @@ def test_load_config_with_llm_section(tmp_path):
         "database": {"path": "d.sqlite"},
         "outlook_config": {},
         "trello_config": {},
-        "llm_config": {"host": "h2", "model": "m2", "api_key": "ak2", "provider": "p2"},
+        "llm_config": {"host": "h2", "model": "m2", "api_key": "ak2", },
     }
     file_path = tmp_path / "man.yaml"
     with open(file_path, 'w') as f:
@@ -166,7 +163,6 @@ def test_load_config_with_llm_section(tmp_path):
     assert loaded.llm_config.host == "h2"
     assert loaded.llm_config.model == "m2"
     assert loaded.llm_config.api_key == "ak2"
-    assert loaded.llm_config.provider == "p2"
 
 
 def test_load_config_file_not_found():

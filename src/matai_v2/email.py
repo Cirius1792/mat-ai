@@ -48,6 +48,9 @@ class EmailAddress:
             return f"{self.name} <{self.email}>"
         return self.email
 
+    def __str__(self) -> str:
+        return self.to_string()
+
     def __eq__(self, other) -> bool:
         """
         Equality comparison based on email address only,

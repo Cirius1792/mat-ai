@@ -6,7 +6,10 @@ from datetime import datetime, timedelta
 
 from matai_v2.configuration import create_sample_config, load_config_from_yaml, save_config_to_yaml
 from matai_v2.context import ApplicationContext
+from matai_v2.logging import configure_logging
+from matai_v2.parser import clean_body
 from matai_v2.trello import TrelloBoardManager
+configure_logging()
 logger  = logging.getLogger(__name__)
 
 @click.group()
@@ -98,13 +101,15 @@ def run(ctx, days):
         for email in filter(lambda m: m.message_id not in processed_emails, emails):
             click.echo(
                 f"Processing email: {email.subject} from {email.sender}")
+            # Cleaning Email body from html tag and previous messages
+            cleaned_body = clean_body(email.body)
             # Process each email to identify action items
             action_items = ctx_app.processor.process_email(email.message_id,
                                                            email.subject,
                                                            email.sender.email,
                                                            [recipient.email for recipient in email.recipients],
                                                            email.timestamp,
-                                                           email.body)
+                                                           cleaned_body)
             # Store action items into the trello board
             trello_manager.create_tasks(email, action_items)
 

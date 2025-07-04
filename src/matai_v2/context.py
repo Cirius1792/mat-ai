@@ -7,7 +7,9 @@ from matai_v2.email import EmailClientInterface, O365Account, O365EmailClient
 from matai_v2.processor import EmailProcessor
 from matai_v2.store import EmailStore
 from matai_v2.trello import TrelloClient
+import logging
 
+logger = logging.getLogger(__name__)
 
 class ApplicationContext:
     """Application context to hold configuration and other state"""

@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from urllib.parse import urlencode
 
 from matai_v2.email import EmailContent
+from matai_v2.parser import clean_body
 from matai_v2.processor import ActionItem
 
 
@@ -296,7 +297,8 @@ class TrelloBoardManager:
         self._list_id = value
 
     def _create_card_description(self, subject: str, body: str) -> str:
-        return f"Thread Subject: {subject}\nOriginal Message: \n{body}"
+        # FIXME: move the clean body invocation in the caller
+        return f"Thread Subject: {subject}\nOriginal Message: \n{clean_body(body)}"
 
     def setup(self):
         """
