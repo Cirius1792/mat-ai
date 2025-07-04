@@ -182,29 +182,23 @@ class O365Account:
 
     def __init__(self, credentials: Tuple[str, str], tenant_id: str, scopes: List[str] = DEFAULT_SCOPES):
         self.account = Account(credentials, tenant_id=tenant_id)
-        self.scopes = scopes
+        assert scopes is not None, "Scopes must be provided"
+        self.scopes = self.account.protocol.get_scopes_for(
+            scopes)
+
+        self.flow = None
 
     def get_auth_link(self):
         assert self.account.con.auth_flow_type in ('authorization', 'public')
-        if self.scopes is not None:
-            if self.account.con.scopes is not None:
-                raise RuntimeError('The scopes must be set either at the Account '
-                                   'instantiation or on the account.authenticate method.')
-            self.account.con.scopes = self.account.protocol.get_scopes_for(
-                self.scopes)
-        else:
-            if self.account.con.scopes is None:
-                raise ValueError(
-                    'The scopes are not set. Define the scopes requested.')
+        assert self.scopes is not None, "Scopes must be provided"
 
-        consent_url, flow = self.account.con.get_authorization_url()
-        return (consent_url, flow)
+        consent_url, self.flow = self.account.con.get_authorization_url(requested_scopes=self.scopes)
+        return (consent_url, self.flow)
 
     def complete_authentication(self, token_url, **kwargs):
-        # TODO: use the flow object to handle the session properly
         if token_url:
             # no need to pass state as the session is the same
-            result = self.account.con.request_token(token_url, **kwargs)
+            result = self.account.con.request_token(token_url, flow=self.flow, **kwargs)
             if result:
                 logger.debug(
                     'Authentication Flow Completed. Oauth Access Token Stored. You can now use the API.')

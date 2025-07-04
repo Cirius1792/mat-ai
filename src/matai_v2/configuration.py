@@ -1,11 +1,9 @@
 import yaml
-from abc import ABC
-from typing import Dict, List
+from typing import List
 from dataclasses import dataclass, field
 
 import logging
 
-from matai_v2.trello import TrelloClient
 logger = logging.getLogger(__name__)
 
 
@@ -95,6 +93,28 @@ class Config:
             # confidence_level=data['confidence_level']
         )
 
+def create_sample_config() -> Config:
+    """Create a sample configuration with default values."""
+    return Config(
+        database=DatabaseConfig(path="matai.db"),
+        outlook_config=OutlookConfig(
+            tenant_id="your_tenant_id",
+            client_id="your_client_id",
+            client_secret="your_client_secret",
+            redirect_uri="http://localhost:8000/callback"
+        ),
+        trello_config=TrelloConfig(
+            api_key="your_api_key",
+            api_token="your_api_token",
+            board="your_board_id"
+        ),
+        llm_config=LLMConfig(
+            host="https://api.example.com",
+            model="gpt-3.5-turbo",
+            api_key="your_llm_api_key",
+            provider="openai"
+        )
+    )
 
 def save_config_to_yaml(config: Config, file_path='config.yaml'):
     """Save configuration to YAML file

@@ -2,7 +2,7 @@ import unittest
 import tempfile
 import os
 
-from matai_v2.configuration import Config, OutlookConfig, load_config_from_yaml, save_config_to_yaml
+from matai_v2.configuration import Config, OutlookConfig, DatabaseConfig, load_config_from_yaml, save_config_to_yaml
 
 class TestConfig(unittest.TestCase):
     def setUp(self):
@@ -18,7 +18,12 @@ class TestConfig(unittest.TestCase):
             redirect_uri="http://localhost"
         )
         
+        self.test_db_config = DatabaseConfig(
+            path="test.db"
+        )
+        
         self.test_config = Config(
+            database=self.test_db_config,
             outlook_config=self.test_email_config
         )
 
@@ -44,6 +49,12 @@ class TestConfig(unittest.TestCase):
         self.assertEqual(
             loaded_config.outlook_config.tenant_id,
             self.test_config.outlook_config.tenant_id
+        )
+
+        # Check database config
+        self.assertEqual(
+            loaded_config.database.path,
+            self.test_config.database.path
         )
 
     def test_load_nonexistent_file(self):

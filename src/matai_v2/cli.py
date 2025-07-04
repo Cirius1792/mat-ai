@@ -1,12 +1,13 @@
 import click
 import yaml
 import os
+import logging
 from datetime import datetime, timedelta
 
 from matai_v2.configuration import create_sample_config, load_config_from_yaml, save_config_to_yaml
 from matai_v2.context import ApplicationContext
 from matai_v2.trello import TrelloBoardManager
-
+logger  = logging.getLogger(__name__)
 
 @click.group()
 @click.pass_context
@@ -18,16 +19,18 @@ def cli(ctx):
 
     configuration_path = os.getenv('PMAI_CONFIG_PATH', './config/config.yaml')
     try:
+        logger.info("Loading configuration from %s", configuration_path)
         config = load_config_from_yaml(configuration_path)
+        logger.info("Configuration loaded successfully")
     except FileNotFoundError:
         click.echo("Error: Configuration file not found.")
         config = create_sample_config()
         save_config_to_yaml(config, configuration_path)
         click.echo("Sample configuration created at " + configuration_path)
-        ctx.exit(1)
+        return
     except yaml.YAMLError as e:
         click.echo("Error: Invalid configuration format. " + str(e))
-        return
+        return 
 
     app_ctx: ApplicationContext = ApplicationContext.init(config)
 
@@ -42,12 +45,16 @@ def cli(ctx):
 def authenticate_command(ctx):
     """Authenticate the application with the email server."""
 
+    if "app_ctx" not in ctx.obj:
+        click.echo("Application context not initialized. ")
+        return
+
     ctx_app = ctx.obj["app_ctx"]
     if ctx_app.outlook_auth_client.is_authenticated:
         click.echo("Already authenticated")
         return
 
-    auth_link, flow = ctx_app.outlook_auth_client.get_auth_link()
+    auth_link, _ = ctx_app.outlook_auth_client.get_auth_link()
     click.echo("Please visit this URL to authenticate:")
     click.echo(auth_link)
     click.echo("After authentication, paste the URL you were redirected to below:")
