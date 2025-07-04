@@ -53,8 +53,8 @@ class Config:
     outlook_config: OutlookConfig = field(default_factory=OutlookConfig)
     # board: Dict[str, BoardConfig]
     # filters: FiltersConfig
-    # llm_config: LLMConfig
-    # confidence_level: float = 0.85
+    llm_config: LLMConfig = field(default_factory=LLMConfig)
+   # confidence_level: float = 0.85
 
     def to_dict(self) -> dict:
         """Convert config to dictionary format"""
@@ -87,14 +87,15 @@ class Config:
         #                        model="",
         #                        api_key=""
         #                        )
-        # if 'llm_config' in data:
-        #     llm_config = LLMConfig(**data['llm_config'])
+        llm_config = LLMConfig()
+        if 'llm_config' in data:
+            llm_config = LLMConfig(**data['llm_config'])
         return cls(
             # database=database_config,
             outlook_config=email_configs,
             # board=board_configs,
             # filters=filters,
-            # llm_config=llm_config,
+            llm_config=llm_config,
             # confidence_level=data['confidence_level']
         )
 

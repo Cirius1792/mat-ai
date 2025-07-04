@@ -1,11 +1,15 @@
 from typing import Optional
 
+from openai import OpenAI
+
 from matai_v2.configuration import Config
 from matai_v2.email import EmailClientInterface, O365Account, O365EmailClient
+from matai_v2.processor import EmailProcessor
 
 
 class ApplicationContext:
     """Application context to hold configuration and other state"""
+    __slots__ = ('config', 'outlook_auth_client', 'outlook_email_client', 'processor')
 
     def __init__(self, config: Config, auth_client: Optional[O365Account] = None):
         self.config = config
@@ -19,6 +23,12 @@ class ApplicationContext:
             )
         self.outlook_email_client: EmailClientInterface = O365EmailClient(
             self.outlook_auth_client)
+
+        if config.llm_config.host:
+            llm_client = OpenAI(api_key=config.llm_config.api_key, base_url=config.llm_config.host)
+        else: 
+            llm_client = OpenAI(api_key=config.llm_config.api_key)
+        self.processor: EmailProcessor= EmailProcessor(llm_client, self.config.llm_config.model)
 
     @classmethod
     def init(cls, config: Config, auth_client: Optional[O365Account] = None) -> 'ApplicationContext':
