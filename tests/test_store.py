@@ -52,6 +52,23 @@ class TestEmailStore(unittest.TestCase):
         self.assertIn("msg3", retrieved_ids)
         self.assertNotIn("msg1", retrieved_ids)
 
+    def test_retrieve_from_with_filter(self):
+        now = datetime.now()
+        yesterday = now - timedelta(days=1)
+        tomorrow = now + timedelta(days=1)
+
+        self.store.store("msg1", yesterday, "PROCESSED")
+        self.store.store("msg2", now, "PROCESSED")
+        self.store.store("msg3", tomorrow, "SKIPPED")
+
+        # Retrieve records from today onwards
+        records = self.store.retrieve_from(now, state_in=["PROCESSED", ])
+
+        self.assertEqual(len(records), 1)
+
+        retrieved_ids = [record[0] for record in records]
+        self.assertIn("msg2", retrieved_ids)
+
     def test_store_with_optional_process_date(self):
         message_id = "test_message_2"
         message_date = datetime.now()

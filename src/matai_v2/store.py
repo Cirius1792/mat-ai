@@ -1,7 +1,7 @@
 import sqlite3
 from datetime import datetime
 from typing import Optional, List, Tuple
-
+from collections import namedtuple
 """Implement an SQLite DAO to store the processed emails. No sensible informations will be stored in the database, but only the minimal set of information required to keep track of what email has been elaborated and when. 
 
 The database table, named PROCESSED_EMAIL contains the following information: 
@@ -14,6 +14,7 @@ The database table, named PROCESSED_EMAIL contains the following information:
     - process_date: the date when the email has been processed, if not provided, the current datetime will be used.
 """
 
+ProcessedEmails = namedtuple('ProcessedEmails', ['message_id', 'message_date', 'process_state', 'process_date'])
 
 class EmailStore:
     def __init__(self, db_path: str):
@@ -53,13 +54,19 @@ class EmailStore:
         """, (message_id, message_date.isoformat(), process_state, process_date.isoformat()))
         self.conn.commit()
 
-    def retrieve_from(self, message_date: datetime) -> List[Tuple[str, str, str, str]]:
+    def retrieve_from(self, message_date: datetime, state_in:List[str]=[]) -> List[ProcessedEmails]:
         """ Retrieve all records from the store that are newer than the given date."""
-        self.cursor.execute("""
+        query = """
             SELECT message_id, message_date, process_state, process_date 
             FROM PROCESSED_EMAIL 
             WHERE message_date >= ?
-        """, (message_date.isoformat(),))
+        """
+        parameters = (message_date.isoformat(),)
+        if state_in:
+            query += " AND process_state IN ({})".format(','.join('?' for _ in state_in))
+            parameters = (parameters[0], *state_in)
+        self.cursor.execute(query, parameters)
+
         return self.cursor.fetchall()
 
     def was_processed(self, message_id: str, process_state: str = 'PROCESSED') -> bool:
