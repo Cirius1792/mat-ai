@@ -55,5 +55,5 @@ class TestConfig(unittest.TestCase):
         """Test saving invalid configuration raises TypeError"""
         invalid_config = {"invalid": "config"}
         with self.assertRaises(TypeError):
-            save_config_to_yaml(invalid_config, self.config_path)
+            save_config_to_yaml(invalid_config, self.config_path) #type: ignore
 

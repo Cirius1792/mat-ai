@@ -1,4 +1,4 @@
-from behave import given, when, then
+from behave import given, when, then  # type: ignore
 import os
 import yaml
 from click.testing import CliRunner
@@ -44,7 +44,7 @@ def create_config_file_with_outlook(tenant_id, client_id, client_secret, redirec
         yaml.dump(config, f)
 
 @given("a valid configuration file exists with Outlook settings")
-def step_impl(context):
+def step_given_valid_config(context):
     create_config_file_with_outlook(
         tenant_id="test_tenant_id",
         client_id="test_client_id",
@@ -59,32 +59,32 @@ def step_impl(context):
     context.app_context = ApplicationContext.init(config, auth_client=context.auth_client)
 
 @given("the application is not authenticated")
-def step_impl(context):
+def step_given_not_authenticated(context):
     context.auth_client.set_authenticated(False)
 
 @when('I run the "authenticate" command')
-def step_impl(context):
+def step_when_run_authenticate(context):
     runner = CliRunner()
     context.result = runner.invoke(cli, ["authenticate"], input="http://localhost:8080/?code=123", obj={
         "app_ctx": context.app_context
     })
 
 @then('I should see "Please visit this URL to authenticate:"')
-def step_impl(context):
+def step_then_see_auth_url(context):
     assert "Please visit this URL to authenticate:" in context.result.output
 
 @then("I should be prompted to paste the URL")
-def step_impl(context):
+def step_then_see_prompt(context):
     assert "Authentication URL:" in context.result.output
 
 @then('I should see "Authentication completed successfully"')
-def step_impl(context):
+def step_then_see_success(context):
     assert "Authentication completed successfully" in context.result.output
 
 @given("the application is already authenticated")
-def step_impl(context):
+def step_given_authenticated(context):
     context.auth_client.set_authenticated(True)
 
 @then('I should see "Already authenticated"')
-def step_impl(context):
+def step_then_see_already_authenticated(context):
     assert "Already authenticated" in context.result.output
