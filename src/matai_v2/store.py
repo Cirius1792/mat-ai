@@ -67,7 +67,11 @@ class EmailStore:
             parameters = (parameters[0], *state_in)
         self.cursor.execute(query, parameters)
 
-        return self.cursor.fetchall()
+        return [ProcessedEmails(message_id=m[0],
+                                message_date=datetime.fromisoformat(m[1]),
+                                process_state=m[2],
+                                process_date=datetime.fromisoformat(m[3])
+                                ) for m in  self.cursor.fetchall()]
 
     def was_processed(self, message_id: str, process_state: str = 'PROCESSED') -> bool:
         """Check if an email with the given message_id has already been processed."""

@@ -5,8 +5,6 @@ import requests
 from dataclasses import dataclass
 from urllib.parse import urlencode
 
-from matai_v2.email import EmailContent
-from matai_v2.parser import clean_body
 from matai_v2.processor import ActionItem
 
 
@@ -297,8 +295,7 @@ class TrelloBoardManager:
         self._list_id = value
 
     def _create_card_description(self, subject: str, body: str) -> str:
-        # FIXME: move the clean body invocation in the caller
-        return f"Thread Subject: {subject}\nOriginal Message: \n{clean_body(body)}"
+        return f"Thread Subject: {subject}\nOriginal Message: \n{body}"
 
     def setup(self):
         """
@@ -332,14 +329,17 @@ class TrelloBoardManager:
     def _create_card_name(self, action_item: ActionItem) -> str:
         return f"{action_item.action_type}: {action_item.description}"
 
-    def create_tasks(self, email: EmailContent, action_items: List[ActionItem]):
+    def create_tasks(self,
+                        subject: str,
+                        body: str,
+                        action_items: List[ActionItem]):
         if self.list_id is None:
             self.setup()
 
         assert self.list_id is not None, "List ID must be set before creating tasks"
         for action_item in action_items:
             description = self._create_card_description(
-                email.subject, email.body)
+                subject, body)
             name = self._create_card_name(action_item)
             due_date = action_item.due_date if action_item.due_date else None
             logger.info("Creating card in list %s with name %s",

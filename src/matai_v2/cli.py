@@ -10,7 +10,8 @@ from matai_v2.logging import configure_logging
 from matai_v2.parser import clean_body
 from matai_v2.trello import TrelloBoardManager
 configure_logging()
-logger  = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
+
 
 @click.group()
 @click.pass_context
@@ -33,7 +34,7 @@ def cli(ctx):
         return
     except yaml.YAMLError as e:
         click.echo("Error: Invalid configuration format. " + str(e))
-        return 
+        return
 
     app_ctx: ApplicationContext = ApplicationContext.init(config)
 
@@ -97,7 +98,8 @@ def run(ctx, days):
             start_date=start_date)
         # Filter email to avoid already processed once
         processed_emails_store = ctx_app.store
-        processed_emails = {m.message_id for m in processed_emails_store.retrieve_from(start_date)}
+        processed_emails = {
+            m.message_id for m in processed_emails_store.retrieve_from(start_date)}
         for email in filter(lambda m: m.message_id not in processed_emails, emails):
             click.echo(
                 f"Processing email: {email.subject} from {email.sender}")
@@ -111,12 +113,12 @@ def run(ctx, days):
                                                            email.timestamp,
                                                            cleaned_body)
             # Store action items into the trello board
-            trello_manager.create_tasks(email, action_items)
+            trello_manager.create_tasks(
+                email.subject, cleaned_body, action_items)
 
             # Store the id of the processed email
             processed_emails_store.store(
                 email.message_id, email.timestamp, 'PROCESSED')
-
 
     except Exception as e:
         click.echo(f"Error running the application: {e}")

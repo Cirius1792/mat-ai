@@ -11,7 +11,7 @@ dependencies = [
     "beautifulsoup4>=4.13.4",
     "click>=8.2.1",
     "lxml>=6.0.0",
-    "o365>=2.1.4",
+    "o365>=2.0.38",
     "openai>=1.92.2",
     "prettytable>=3.16.0",
     "pyyaml>=6.0.2",
@@ -30,5 +30,6 @@ test = [
     "pytest>=8.4.1",
 ]
 dev = [
+    "ipdb>=0.13.13",
     "pyright>=1.1.402",
 ]
