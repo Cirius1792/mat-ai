@@ -113,7 +113,7 @@ def save_config_to_yaml(config: Config, file_path='config.yaml'):
     logger.debug(f"Saving config to {file_path}")
 
     with open(file_path, 'w') as file:
-        yaml.dump(config.to_dict(), file, default_flow_style=False)
+        yaml.safe_dump(config.to_dict(), file, default_flow_style=False)
 
 
 def load_config_from_yaml(file_path='config.yaml') -> Config:
