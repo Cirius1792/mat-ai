@@ -126,7 +126,7 @@ def test_save_config_to_yaml_type_error(tmp_path):
     # Passing non-Config should raise
     file_path = tmp_path / "cfg.yaml"
     with pytest.raises(TypeError):
-        save_config_to_yaml("not_a_config", file_path=str(file_path)) # Add an ignore to the pyright type hint. verify the outcome using the command uv run pyright AI!
+        save_config_to_yaml("not_a_config", file_path=str(file_path))  # type: ignore[arg-type]
 
 
 def test_save_and_load_config_yaml(tmp_path):
