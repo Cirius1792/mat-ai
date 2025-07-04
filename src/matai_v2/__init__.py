@@ -1,2 +1,5 @@
+from matai_v2.cli import cli
+
+
 def main() -> None:
-    print("Hello from matai-v2!")
+    cli()

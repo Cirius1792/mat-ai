@@ -98,6 +98,7 @@ class Config:
             # confidence_level=data['confidence_level']
         )
 
+
 def save_config_to_yaml(config:Config, file_path='config.yaml'):
     """Save configuration to YAML file
 
