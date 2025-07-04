@@ -270,7 +270,6 @@ class EmailProcessor:
             List of extracted action items with confidence scores
         """
 
-        action_items = []
         start_time = datetime.now()
         prompt = self._prompt_builder(
             subject,
@@ -281,8 +280,23 @@ class EmailProcessor:
         )
         logger.debug("Formatted prompt: %s", prompt)
         # Call the LLM to generate a response
+        action_items = self._extract_action_items(
+            message_id=message_id,
+            prompt=prompt,
+            email_date=email_date,
+            max_retries=max_retries
+        )
 
-        # try calling LLM, with per-request timeout to avoid indefinite hangs
+        processing_time = datetime.now() - start_time
+        minutes = processing_time.seconds // 60
+        seconds = processing_time.seconds % 60
+        logger.info(
+            f"Processed email {message_id} in {minutes}m {seconds}s")
+
+        return action_items
+
+    def _extract_action_items(self, message_id, prompt, email_date, max_retries) -> List[ActionItem]:
+        action_items = []
         for attempt in range(max_retries + 1):
             try:
                 response = self._client.chat.completions.create(
@@ -314,11 +328,4 @@ class EmailProcessor:
                     logger.error(
                         f"LLM processing failed {max_retries} times with error: {e}")
                     raise e
-
-        processing_time = datetime.now() - start_time
-        minutes = processing_time.seconds // 60
-        seconds = processing_time.seconds % 60
-        logger.info(
-            f"Processed email {message_id} in {minutes}m {seconds}s")
-
         return action_items
