@@ -31,11 +31,7 @@ class FiltersConfig:
 
 @dataclass
 class DatabaseConfig:
-    name: str = "pmai_sqlite.db"
-    user: str = "sqlite"
-    password: str = ""
-    host: str = ""
-    port: int = 5432
+    path: str = "matai.db"
 
 
 @dataclass
@@ -48,7 +44,7 @@ class LLMConfig:
 
 @dataclass
 class Config:
-    # database: DatabaseConfig
+    database: DatabaseConfig = field(default_factory=DatabaseConfig)
     outlook_config: OutlookConfig = field(default_factory=OutlookConfig)
     trello_config: TrelloConfig = field(default_factory=TrelloConfig)
     # filters: FiltersConfig
@@ -58,7 +54,7 @@ class Config:
     def to_dict(self) -> dict:
         """Convert config to dictionary format"""
         return {
-            # 'database': self.database.__dict__,
+            'database': self.database.__dict__,
             'outlook_config': self.outlook_config.__dict__,
             'trello_config': self.trello_config.__dict__,
             # 'filters': self.filters.__dict__,
@@ -69,6 +65,7 @@ class Config:
     @classmethod
     def from_dict(cls, data: dict) -> 'Config':
         """Create config from dictionary data"""
+        database_config = DatabaseConfig(**data.get('database', {}))
         email_configs = OutlookConfig(**data['outlook_config'])
 
         trello_config = TrelloConfig(**data['trello_config'])
@@ -90,7 +87,7 @@ class Config:
         if 'llm_config' in data:
             llm_config = LLMConfig(**data['llm_config'])
         return cls(
-            # database=database_config,
+            database=database_config,
             outlook_config=email_configs,
             trello_config=trello_config,
             # filters=filters,
