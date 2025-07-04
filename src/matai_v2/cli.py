@@ -12,7 +12,8 @@ from matai_v2.trello import TrelloBoardManager
 @click.pass_context
 def cli(ctx):
     """Lightweight CLI to view the application database."""
-    if ctx.obj and "app_ctx" in ctx.obj:
+    ctx.ensure_object(dict)
+    if "app_ctx" in ctx.obj:
         return
 
     configuration_path = os.getenv('PMAI_CONFIG_PATH', './config/config.yaml')
@@ -23,8 +24,7 @@ def cli(ctx):
         config = create_sample_config()
         save_config_to_yaml(config, configuration_path)
         click.echo("Sample configuration created at " + configuration_path)
-        # Please make the application exit with an exit code different from zero in this case AI!
-        return
+        ctx.exit(1)
     except yaml.YAMLError as e:
         click.echo("Error: Invalid configuration format. " + str(e))
         return
@@ -87,8 +87,8 @@ def run(ctx, days):
             start_date=start_date)
         # Filter email to avoid already processed once
         processed_emails_store = ctx_app.store
-        processed_emails = { m.message_id for m in  processed_emails_store.retrieve_from(start_date)}
-        for email in filter(lambda m: m.message_id in processed_emails, emails):
+        processed_emails = {m.message_id for m in processed_emails_store.retrieve_from(start_date)}
+        for email in filter(lambda m: m.message_id not in processed_emails, emails):
             click.echo(
                 f"Processing email: {email.subject} from {email.sender}")
             # Process each email to identify action items
