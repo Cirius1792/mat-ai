@@ -81,8 +81,10 @@ def run(ctx, days):
         # Retrieve emails from the Outlook client
         emails = ctx_app.outlook_email_client.read_messages(
             start_date=start_date)
-        # TODO: Filter email to avoid already processed once
-        for email in emails:
+        # Filter email to avoid already processed once
+        processed_emails_store = ctx_app.store
+        processed_emails = { m.message_id for m in  processed_emails_store.retrieve_from(start_date)}
+        for email in filter(lambda m: m.message_id in processed_emails, emails):
             click.echo(
                 f"Processing email: {email.subject} from {email.sender}")
             # Process each email to identify action items
@@ -95,7 +97,10 @@ def run(ctx, days):
             # Store action items into the trello board
             trello_manager.create_tasks(email, action_items)
 
-            # TODO: store the id of the processed email
+            # Store the id of the processed email
+            processed_emails_store.store(
+                email.message_id, email.timestamp, 'PROCESSED')
+
 
     except Exception as e:
         click.echo(f"Error running the application: {e}")
