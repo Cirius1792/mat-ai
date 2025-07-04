@@ -1,0 +1,28 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+.aider*
+o365_token.txt
+email.env
+mail.env
+pmai_sqlite.db
+
+# Docker
+.docker/
+docker-compose.override.yml
+.env
+.env.local
+.env.*.local
+
+# Data and config directories
+/data/
+/config/*
+!/config/config.yaml.example
+.secrets
