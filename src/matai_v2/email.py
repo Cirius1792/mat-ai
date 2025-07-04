@@ -62,10 +62,6 @@ class EmailAddress:
         return hash(self.email.lower())
 
 
-@dataclass
-class Participant:
-    alias: str
-    email: Optional[EmailAddress] = None
 
 
 @dataclass
