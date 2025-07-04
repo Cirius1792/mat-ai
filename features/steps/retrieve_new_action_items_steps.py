@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 from behave import given, when, then  # type: ignore
 from click.testing import CliRunner
 from matai_v2.cli import cli
+from unittest.mock import MagicMock
 # Given steps
 
 
@@ -90,20 +91,39 @@ def step_given_some_emails_contain_no_actionable_content(context):
 
 @when('I run the application with the "{command}" command')
 def step_when_run_application(context, command):
+    # Patch the email client's read_messages method so we can verify the call later
+    context.app_context.email_client.read_messages = MagicMock(return_value=[])
+    context.email_client_read_messages_mock = context.app_context.email_client.read_messages
+
     runner = CliRunner()
-    context.result = runner.invoke(cli, [command], input="http://localhost:8080/?code=123", obj={
-        "app_ctx": context.app_context
-    })
+    context.result = runner.invoke(
+        cli,
+        [command],
+        input="http://localhost:8080/?code=123",
+        obj={"app_ctx": context.app_context},
+    )
 
 # Then steps
 
 
 @then('the system should retrieve emails from the last {days:d} days')
 def step_then_system_should_retrieve_emails_from_last_days(context, days):
-    # To implement this verification step I need to spy how the email client used in the cli has been invoked and check the start_date parameter.
-    # Can you help me implement this step AI!
-    raise NotImplementedError(
-        'STEP: the system should retrieve emails from the last {days:d} days')
+    """Verify that read_messages was called with the expected start_date."""
+    expected_start_date = datetime.now() - timedelta(days=days)
+
+    mock = context.email_client_read_messages_mock
+    assert mock.called, "Expected email_client.read_messages to be called"
+
+    # Accept either start_date or start_days for backward-compatibility.
+    called_kwargs = mock.call_args.kwargs
+    start_date = called_kwargs.get("start_date") or called_kwargs.get("start_days")
+    assert start_date is not None, "start_date argument not supplied to read_messages"
+
+    # Allow a small timing difference (≤ 60 seconds)
+    delta_seconds = abs((expected_start_date - start_date).total_seconds())
+    assert (
+        delta_seconds < 60
+    ), f"start_date {start_date} differs from expected {expected_start_date} by more than 60 seconds"
 
 
 @then('action items should be extracted from emails containing actionable content')

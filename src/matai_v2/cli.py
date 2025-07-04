@@ -67,10 +67,9 @@ def run(ctx, days):
     try:
         # Calculate the start date taking the current date time and then subtracting the days variable
         click.echo(f"Processing emails from the last {days} days...")
-        start_days = datetime.now() - timedelta(days=days)
+        start_date = datetime.now() - timedelta(days=days)
 
-        # The test should verfy that this method has been invoked with a date that is 5 days before today AI
-        ctx_app.email_client.read_messages(start_days=start_days)
+        ctx_app.email_client.read_messages(start_date=start_date)
     except Exception as e:
         click.echo(f"Error running the application: {e}")
 
