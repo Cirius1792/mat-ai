@@ -3,7 +3,7 @@ import yaml
 import os
 from datetime import datetime, timedelta
 
-from matai_v2.configuration import load_config_from_yaml
+from matai_v2.configuration import create_sample_config, load_config_from_yaml, save_config_to_yaml
 from matai_v2.context import ApplicationContext
 from matai_v2.trello import TrelloBoardManager
 
@@ -12,8 +12,7 @@ from matai_v2.trello import TrelloBoardManager
 @click.pass_context
 def cli(ctx):
     """Lightweight CLI to view the application database."""
-    ctx.ensure_object(dict)
-    if "app_ctx" in ctx.obj:
+    if ctx.obj and "app_ctx" in ctx.obj:
         return
 
     configuration_path = os.getenv('PMAI_CONFIG_PATH', './config/config.yaml')
@@ -21,10 +20,14 @@ def cli(ctx):
         config = load_config_from_yaml(configuration_path)
     except FileNotFoundError:
         click.echo("Error: Configuration file not found.")
-        ctx.exit(1)
+        config = create_sample_config()
+        save_config_to_yaml(config, configuration_path)
+        click.echo("Sample configuration created at " + configuration_path)
+        # Please make the application exit with an exit code different from zero in this case AI!
+        return
     except yaml.YAMLError as e:
         click.echo("Error: Invalid configuration format. " + str(e))
-        ctx.exit(1)
+        return
 
     app_ctx: ApplicationContext = ApplicationContext.init(config)
 
@@ -84,8 +87,8 @@ def run(ctx, days):
             start_date=start_date)
         # Filter email to avoid already processed once
         processed_emails_store = ctx_app.store
-        processed_emails = {m.message_id for m in processed_emails_store.retrieve_from(start_date)}
-        for email in filter(lambda m: m.message_id not in processed_emails, emails):
+        processed_emails = { m.message_id for m in  processed_emails_store.retrieve_from(start_date)}
+        for email in filter(lambda m: m.message_id in processed_emails, emails):
             click.echo(
                 f"Processing email: {email.subject} from {email.sender}")
             # Process each email to identify action items
