@@ -3,7 +3,7 @@ from typing import Tuple
 from datetime import datetime
 from unittest.mock import MagicMock
 
-from matai_v2.processor import ActionType, EmailProcessor
+from matai_v2.processor import ActionType, process_email
 
 from collections import namedtuple
 
@@ -120,31 +120,23 @@ test_cases = [
 ]
 
 
-@pytest.fixture
-def processor() -> Tuple[EmailProcessor, MagicMock]:
-    mock_llm = MagicMock()
-    proc = EmailProcessor(
-        client=mock_llm,
-        model="test_model",
-    )
-    return proc, mock_llm
-
-
 @pytest.mark.parametrize("sample_email, llm_response_content, expected", test_cases)
-def test_email_processor_parametrized(processor: Tuple[EmailProcessor, MagicMock], sample_email, llm_response_content, expected):
-    proc, mock_llm = processor
+def test_email_processor_parametrized(sample_email, llm_response_content, expected):
+    mock_llm = MagicMock()
     mock_llm.chat.completions.create.return_value = MagicMock(
         choices=[MagicMock(
             message=MagicMock(content=llm_response_content)
         )]
     )
-    results = proc.process_email(sample_email.message_id,
-                                 sample_email.subject,
-                                 sample_email.sender,
-                                 sample_email.recipients,
-                                 sample_email.timestamp,
-                                 sample_email.body
-                                 )
+    results = process_email(
+        mock_llm, "test-model",
+        sample_email.message_id,
+        sample_email.subject,
+        sample_email.sender,
+        sample_email.recipients,
+        sample_email.timestamp,
+        sample_email.body
+    )
     # Ensure one action item is returned
     assert len(results) == 1
     result = results[0]

@@ -8,6 +8,7 @@ from matai_v2.configuration import create_sample_config, load_config_from_yaml, 
 from matai_v2.context import ApplicationContext
 from matai_v2.logging import configure_logging
 from matai_v2.parser import clean_body
+from matai_v2.processor import process_email
 from matai_v2.trello import TrelloBoardManager
 configure_logging()
 logger = logging.getLogger(__name__)
@@ -106,12 +107,15 @@ def run(ctx, days):
             # Cleaning Email body from html tag and previous messages
             cleaned_body = clean_body(email.body)
             # Process each email to identify action items
-            action_items = ctx_app.processor.process_email(email.message_id,
-                                                           email.subject,
-                                                           email.sender.email,
-                                                           [recipient.email for recipient in email.recipients],
-                                                           email.timestamp,
-                                                           cleaned_body)
+            action_items = process_email(
+                ctx_app.llm_client,
+                ctx_app.config.llm_config.model,
+                email.message_id,
+                email.subject,
+                email.sender.email,
+                [recipient.email for recipient in email.recipients],
+                email.timestamp,
+                cleaned_body)
             # Store action items into the trello board
             trello_manager.create_tasks(
                 email.subject, cleaned_body, action_items)

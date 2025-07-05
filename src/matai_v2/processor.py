@@ -45,6 +45,7 @@ class ActionItem:
     description: str
     confidence_score: float
     message_id: str
+    # TODO: maybe it should just be a date and not a datetime, right?
     due_date: Optional[datetime]
     id: int = 0
 
@@ -185,148 +186,148 @@ Output:
 ```"""
 
 
-class EmailProcessor:
-    def __init__(self, client: OpenAI, model: str):
-        """
-        Initialize the email processor with an LLM service and confidence threshold.
+_prompt_template = Template(EXTRACTION_PROMPT)
 
-        Args:
-            llm_service: Service for LLM interactions
-            confidence_threshold: Minimum confidence score for automatic acceptance
-        """
-        self._client = client
-        self._model = model
-        self._promtp_template = Template(EXTRACTION_PROMPT)
 
-    def _parse_date(self, date_str: str) -> Optional[datetime]:
-        if not date_str:
-            return None
+def _parse_date(date_str: str) -> Optional[datetime]:
+    if not date_str:
+        return None
+    try:
+        # Try parsing as a full datetime first
+        return datetime.fromisoformat(date_str)
+    except ValueError:
         try:
-            # Try parsing as a full datetime first
-            return datetime.fromisoformat(date_str)
+            # Fallback to parsing as a date only
+            return datetime.strptime(date_str, "%Y-%m-%d")
         except ValueError:
-            try:
-                # Fallback to parsing as a date only
-                return datetime.strptime(date_str, "%Y-%m-%d")
-            except ValueError:
-                logger.error(f"Invalid date format: {date_str}")
-                return None
+            logger.error(f"Invalid date format: {date_str}")
+            return None
 
-    def _prompt_builder(self,
-                        subject: str,
-                        sender: str,
-                        recipients: List[str],
-                        email_date: datetime,
-                        body: str,
-                        ) -> str:
-        from_ = ", ".join([e for e in recipients])
-        return self._promtp_template.substitute(
-            sender=sender,
-            recipients=from_,
-            subject=subject,
-            email_date=email_date.strftime("%y-%m-%d"),
-            email_content=body,
-        )
 
-    def _sanitarize_date(self, due_date: Optional[datetime], email_date: datetime) -> datetime:
-        if due_date is None:
-            return email_date
-        # Convert both datetimes to naive for comparison
-        naive_due = due_date.replace(tzinfo=None)
-        naive_email = email_date.replace(tzinfo=None)
-        if naive_due < naive_email:
-            return email_date
-        return due_date
+def _prompt_builder(
+    subject: str,
+    sender: str,
+    recipients: List[str],
+    email_date: datetime,
+    body: str,
+) -> str:
+    from_ = ", ".join([e for e in recipients])
+    return _prompt_template.substitute(
+        sender=sender,
+        recipients=from_,
+        subject=subject,
+        email_date=email_date.strftime("%y-%m-%d"),
+        email_content=body,
+    )
 
-    def map_action(self, due_date, message_id, item_json) -> ActionItem:
-        return ActionItem(
-            action_type=ActionType.from_string(
-                item_json.get("type", "task")),
-            description=item_json.get("description", ""),
-            due_date=due_date,
-            confidence_score=float(item_json.get("confidence", 0)),
-            message_id=message_id
-        )
 
-    def process_email(self, message_id: str,
-                      subject: str,
-                      sender: str,
-                      recipients: List[str],
-                      email_date: datetime,
-                      body: str,
-                      max_retries=3) -> List[ActionItem]:
-        """
-        Process an email and extract action items.
+def _sanitarize_date(due_date: Optional[datetime], email_date: datetime) -> datetime:
+    if due_date is None:
+        return email_date
+    # Convert both datetimes to naive for comparison
+    naive_due = due_date.replace(tzinfo=None)
+    naive_email = email_date.replace(tzinfo=None)
+    if naive_due < naive_email:
+        return email_date
+    return due_date
 
-        Args:
-            - message_id: Unique identifier for the email
-            - subject: Subject of the email
-            - sender: Email address of the sender
-            - recipients: List of email addresses of the recipients
-            - email_date: Date and time the email was sent
-            - body: Body of the email
-            - max_retries: Number of retries for LLM processing in case of failure
-        Returns:
-            List of extracted action items with confidence scores
-        """
 
-        start_time = datetime.now()
-        prompt = self._prompt_builder(
-            subject,
-            sender,
-            recipients,
-            email_date,
-            body
-        )
-        logger.debug("Formatted prompt: %s", prompt)
-        # Call the LLM to generate a response
-        action_items = self._extract_action_items(
-            message_id=message_id,
-            prompt=prompt,
-            email_date=email_date,
-            max_retries=max_retries
-        )
+def map_action(due_date, message_id, item_json) -> ActionItem:
+    return ActionItem(
+        action_type=ActionType.from_string(
+            item_json.get("type", "task")),
+        description=item_json.get("description", ""),
+        due_date=due_date,
+        confidence_score=float(item_json.get("confidence", 0)),
+        message_id=message_id
+    )
 
-        processing_time = datetime.now() - start_time
-        minutes = processing_time.seconds // 60
-        seconds = processing_time.seconds % 60
-        logger.info(
-            f"Processed email {message_id} in {minutes}m {seconds}s")
 
-        return action_items
+def _extract_action_items(client: OpenAI, model: str,  message_id, prompt, email_date, max_retries) -> List[ActionItem]:
+    action_items = []
+    for attempt in range(max_retries + 1):
+        try:
+            response = client.chat.completions.create(
+                messages=[{"role": "user", "content": prompt}],
+                model=model,
+                temperature=0.0,
+                response_format={"type": "json_object"},
+                timeout=60  # seconds
+            )
 
-    def _extract_action_items(self, message_id, prompt, email_date, max_retries) -> List[ActionItem]:
-        action_items = []
-        for attempt in range(max_retries + 1):
-            try:
-                response = self._client.chat.completions.create(
-                    messages=[{"role": "user", "content": prompt}],
-                    model=self._model,
-                    temperature=0.0,
-                    response_format={"type": "json_object"},
-                    timeout=60  # seconds
+            logger.info(
+                f"LLM Response: {response.choices[0].message.content}")
+            assert response.choices[0].message.content, "LLM response is empty"
+            llm_data = json.loads(response.choices[0].message.content)
+            for item_json in llm_data.get("action_items", []):
+                due_date = None
+                due_date = _parse_date(item_json.get("due_date"))
+                due_date = _sanitarize_date(
+                    due_date, email_date)
+                action_items.append(
+                    map_action(
+                        due_date, message_id, item_json)
                 )
+            # If I am down here it means the the llm response was ok
+            break
+        except Exception as e:
+            # But if I get here max_attempts times it meas that the computation is failed too many time
+            if attempt == max_retries:
+                logger.error(
+                    f"LLM processing failed {max_retries} times with error: {e}")
+                logger.error(f"Endpoint: {client._base_url}")
+                raise e
+    return action_items
 
-                logger.info(
-                    f"LLM Response: {response.choices[0].message.content}")
-                assert response.choices[0].message.content, "LLM response is empty"
-                llm_data = json.loads(response.choices[0].message.content)
-                for item_json in llm_data.get("action_items", []):
-                    due_date = None
-                    due_date = self._parse_date(item_json.get("due_date"))
-                    due_date = self._sanitarize_date(
-                        due_date, email_date)
-                    action_items.append(
-                        self.map_action(
-                            due_date, message_id, item_json)
-                    )
-                # If I am down here it means the the llm response was ok
-                break
-            except Exception as e:
-                # But if I get here max_attempts times it meas that the computation is failed too many time
-                if attempt == max_retries:
-                    logger.error(
-                        f"LLM processing failed {max_retries} times with error: {e}")
-                    logger.error(f"Endpoint: {self._client._base_url}")
-                    raise e
-        return action_items
+
+def process_email(
+        client: OpenAI,
+        model: str,
+        message_id: str,
+        subject: str,
+        sender: str,
+        recipients: List[str],
+        email_date: datetime,
+        body: str,
+        max_retries=3) -> List[ActionItem]:
+    """
+    Process an email and extract action items.
+
+    Args:
+        - message_id: Unique identifier for the email
+        - subject: Subject of the email
+        - sender: Email address of the sender
+        - recipients: List of email addresses of the recipients
+        - email_date: Date and time the email was sent
+        - body: Body of the email
+        - max_retries: Number of retries for LLM processing in case of failure
+    Returns:
+        List of extracted action items with confidence scores
+    """
+
+    start_time = datetime.now()
+    prompt = _prompt_builder(
+        subject,
+        sender,
+        recipients,
+        email_date,
+        body
+    )
+    logger.debug("Formatted prompt: %s", prompt)
+    # Call the LLM to generate a response
+    action_items = _extract_action_items(
+        client=client,
+        model=model,
+        message_id=message_id,
+        prompt=prompt,
+        email_date=email_date,
+        max_retries=max_retries
+    )
+
+    processing_time = datetime.now() - start_time
+    minutes = processing_time.seconds // 60
+    seconds = processing_time.seconds % 60
+    logger.info(
+        f"Processed email {message_id} in {minutes}m {seconds}s")
+
+    return action_items
