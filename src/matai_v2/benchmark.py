@@ -301,8 +301,10 @@ def compute_score(email: EmailContent,
 
     # Call your LLM client here
     max_retries = 3
+    llm_response = ""
 
     for i in range(max_retries):
+        llm_response = ""
         try:
             # Retry logic for robustness
             if i > 0:
@@ -316,6 +318,7 @@ def compute_score(email: EmailContent,
                 timeout=120,  # seconds
                 max_tokens=2000,
             )
+            llm_response = response.choices[0].message.content
             result = json.loads(response.choices[0].message.content)
 
             return EvaluationResult(
@@ -325,6 +328,7 @@ def compute_score(email: EmailContent,
         except (json.JSONDecodeError, KeyError, IndexError) as e:
             logger.warning(f"LLM response parsing failed on attempt {i + 1}/{max_retries}. Error: {e}")
             if i == max_retries - 1:
+                logger.error(f"Response retrieved from the llm: {llm_response}")
                 logger.error(
                     f"Failed to parse LLM response after {max_retries} attempts. Returning zero score.")
                 return EvaluationResult(
