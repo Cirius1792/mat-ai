@@ -148,16 +148,19 @@ def init():
 
 
 @cli.command("benchmark", short_help="Score the application effectiveness with the given llm configuration against a known dataset")
-@click.option("--config", type=str)
-def benchmark(config):
+@click.option("--models", type=str, help="Comma-separated list of model identifiers to benchmark. If none is provided, the model configured in the config file will be used")
+@click.option("--config", type=str, default=None, help="Path to the configuration file")
+def benchmark(models, config):
     config_path = config if config is not None else configuration_path
     config = load_config_from_yaml(config_path)
     # Assuming you have an OpenAI client configured
     llm_client = OpenAI(
         base_url=config.llm_config.host, api_key=config.llm_config.api_key)
     # Replace with your actual model identifier
-    judge_model = config.llm_config.model
+    judge_model = [config.llm_config.model]
+    if models:
+        judge_model = models.split(',')
     benchmark_model(
         llm_client,
-        [judge_model],
+        judge_model,
     )
