@@ -5,7 +5,7 @@ import os
 import logging
 from datetime import datetime, timedelta
 
-from matai_v2.benchmark import benchmark_model, benchmark_model_from_dataset, load_judge_test_from_jsonl, print_benchmark_results, store_benchmark_results_to_markdown_file
+from matai_v2.benchmark import benchmark_model_from_dataset, load_judge_test_from_jsonl, print_benchmark_results, store_benchmark_results_to_markdown_file
 from matai_v2.configuration import create_sample_config, load_config_from_yaml, save_config_to_yaml
 from matai_v2.context import ApplicationContext
 from matai_v2.logging import configure_logging
