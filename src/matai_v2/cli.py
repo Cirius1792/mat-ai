@@ -160,7 +160,6 @@ def benchmark(config):
     result_table = PrettyTable([
         "Description",
         "Weighetd Score",
-        "Performance Summary",
         EvaluationResult.COMPLETENESS,
         EvaluationResult.ACCURACY_CLARITY,
         EvaluationResult.DUE_DATE_PRECISION,
@@ -181,7 +180,6 @@ def benchmark(config):
         result_table.add_row([
             test_case.description,
             evaluation_result.get_weighted_score(),
-            evaluation_result.get_performance_summary(),
             evaluation_result.completeness,
             evaluation_result.accuracy_clarity,
             evaluation_result.due_date_precision,
