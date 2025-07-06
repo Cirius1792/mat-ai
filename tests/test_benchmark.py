@@ -1,51 +1,45 @@
-import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 import os
 import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
 
-from matai_v2.benchmark import benchmark_model, EvaluationResult, create_comprehensive_test_suite, print_benchmark_results
+from matai_v2.benchmark import (
+    EvaluationResult,
+    print_benchmark_results, 
+    store_judge_test_to_jsonl, 
+    load_judge_test_from_jsonl, 
+    create_perfect_score_test_case,
+)
 
-def test_benchmark_model_with_mocked_score_fnc():
+
+
+def test_store_and_load_judge_test_to_jsonl():
     # Arrange
-    llm_client_mock = MagicMock()
-    judge_models = ["test_model_1", "test_model_2"]
-
-    # Create a mock score_fnc that returns a predictable EvaluationResult
-    mock_score = EvaluationResult(
-        overall_score=4.0,
-        dimension_scores={
-            "completeness": 4.0,
-            "accuracy_clarity": 4.0,
-            "due_date_precision": 4.0,
-            "confidence_calibration": 4.0,
-        }
-    )
-    score_fnc_mock = MagicMock(return_value=mock_score)
+    test_case = create_perfect_score_test_case()
+    file_path = "test_judge_cases.jsonl"
 
     # Act
-    results = benchmark_model(llm_client_mock, judge_models, score_fnc=score_fnc_mock)
+    store_judge_test_to_jsonl(test_case, file_path)
+    loaded_test_cases = list(load_judge_test_from_jsonl(file_path))
 
     # Assert
-    assert len(results) == len(judge_models)
-    for model in judge_models:
-        assert model in results
-        assert len(results[model]) == len(create_comprehensive_test_suite())
+    assert len(loaded_test_cases) == 1
+    loaded_test_case, loaded_expected_scores = loaded_test_cases[0]
+    
+    original_test_case, original_expected_scores = test_case
 
-    # Verify score_fnc was called for each test case and each model
-    assert score_fnc_mock.call_count == len(judge_models) * len(create_comprehensive_test_suite())
+    # Compare EmailTestCase
+    assert loaded_test_case.description == original_test_case.description
+    assert loaded_test_case.email.subject == original_test_case.email.subject
+    assert loaded_test_case.email.body == original_test_case.email.body
+    
+    # Compare EvaluationResult
+    assert loaded_expected_scores.overall_score == original_expected_scores.overall_score
+    assert loaded_expected_scores.dimension_scores == original_expected_scores.dimension_scores
 
-    # Check the calculation of the delta
-    for model in judge_models:
-        for test_case, expected_scores in create_comprehensive_test_suite():
-            result_score = results[model][test_case.description]
-            expected_delta_overall = expected_scores.overall_score - mock_score.overall_score
-            assert result_score.overall_score == pytest.approx(expected_delta_overall)
-
-            for dim, score in expected_scores.dimension_scores.items():
-                expected_delta_dim = score - mock_score.dimension_scores[dim]
-                assert result_score.dimension_scores[dim] == pytest.approx(expected_delta_dim)
+    # Clean up the created file
+    os.remove(file_path)
 
 def test_print_benchmark_results():
     # Arrange

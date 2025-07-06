@@ -4,9 +4,8 @@ import yaml
 import os
 import logging
 from datetime import datetime, timedelta
-from prettytable import PrettyTable
 
-from matai_v2.benchmark import EvaluationResult, benchmark_model, compute_score, create_comprehensive_test_suite, print_benchmark_results, store_benchmark_results_to_markdown_file
+from matai_v2.benchmark import benchmark_model, benchmark_model_from_dataset, load_judge_test_from_jsonl, print_benchmark_results, store_benchmark_results_to_markdown_file
 from matai_v2.configuration import create_sample_config, load_config_from_yaml, save_config_to_yaml
 from matai_v2.context import ApplicationContext
 from matai_v2.logging import configure_logging
@@ -148,10 +147,11 @@ def init():
 
 
 @cli.command("benchmark-judge", short_help="Score an AI Judge with the given llm configuration against a known dataset")
+@click.argument("test-file-path", type=click.Path(exists=True))
 @click.option("--models", type=str, help="Comma-separated list of model identifiers to benchmark. If none is provided, the model configured in the config file will be used")
-@click.option("--config", type=str, default=None, help="Path to the configuration file")
+@click.option("--config", type=click.Path(exists=True), default=None, help="Path to the configuration file")
 @click.option("--output", type=str, default=None, help="Path to save the benchmark results")
-def benchmark(models, config, output):
+def benchmark(test_file_path, models, config, output):
     config_path = config if config is not None else configuration_path
     config = load_config_from_yaml(config_path)
     # Assuming you have an OpenAI client configured
@@ -161,9 +161,10 @@ def benchmark(models, config, output):
     judge_model = [config.llm_config.model]
     if models:
         judge_model = models.split(',')
-    results = benchmark_model(
+    results = benchmark_model_from_dataset(
         llm_client,
         judge_model,
+        load_judge_test_from_jsonl(test_file_path)
     )
     print_benchmark_results(results, click.echo)
     if output is not None: 

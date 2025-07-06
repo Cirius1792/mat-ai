@@ -1,20 +1,24 @@
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, Iterator, List, Optional, Tuple
 from dataclasses import dataclass
 from typing import List
 import json
 from datetime import datetime, timedelta
-from collections import namedtuple
 from openai import OpenAI
 from matai_v2.email import EmailAddress, EmailContent
 from matai_v2.logging import configure_logging
-from matai_v2.processor import ActionItem, ActionType
+from matai_v2.processor import ActionItem, ActionType, load_action_item_from_json
 import logging
 from prettytable import PrettyTable, TableStyle
 configure_logging()
 logger = logging.getLogger(__name__)
 
-EmailTestCase = namedtuple(
-    'EmailTestCase', ['email', 'expected', 'actual', 'description'])
+
+@dataclass
+class EmailTestCase:
+    email: EmailContent
+    expected: List[ActionItem]
+    actual: List[ActionItem]
+    description: str
 
 
 def create_judge_prompt(email: EmailContent, expected_action_items: List[ActionItem], actual_action_items: List[ActionItem]) -> str:
@@ -240,6 +244,12 @@ class EvaluationResult:
 
         return {dim: score_to_label(score)
                 for dim, score in self.dimension_scores.items()}
+
+    def to_json(self):
+        return {
+            "overall_score": self.overall_score,
+            "dimension_scores": self.dimension_scores
+        }
 
     @property
     def completeness(self) -> float:
@@ -816,10 +826,45 @@ def create_wrong_due_dates_test_case() -> Tuple[EmailTestCase, EvaluationResult]
             )
 
 
+def benchmark_model_from_dataset(llm_client: OpenAI, judge_models: List[str],
+                    test_data: Iterator[Tuple[EmailTestCase, EvaluationResult]],
+                    score_fnc=compute_score
+                    ) -> Dict[str, Dict[str, EvaluationResult]]:
+    """Run a benchmark against the given judge model. The goal is to evaluate the effectiveness of a model to act a judge for the application.
+    The score returned by the model is compared against a baseline score expected for each test case and the difference between the score in every category is computed. """
+
+    results: Dict[str, Dict[str, EvaluationResult]] = {}
+    for judge_model in judge_models:
+        results[judge_model] = {}
+        for test_case, expected_scores in test_data:
+            actual_score = score_fnc(
+                test_case.email,
+                test_case.expected,
+                test_case.actual,
+                llm_client,
+                judge_model,
+            )
+            if actual_score is None:
+                logger.error(
+                    f"Error evaluating test case: {test_case.description}")
+                continue
+            logger.info(
+                f"{test_case.description}: \t {actual_score.get_weighted_score()}")
+            results[judge_model][test_case.description] = EvaluationResult(
+                expected_scores.overall_score - actual_score.overall_score,
+                {
+                    EvaluationResult.COMPLETENESS: expected_scores.completeness - actual_score.completeness,
+                    EvaluationResult.ACCURACY_CLARITY: expected_scores.accuracy_clarity - actual_score.accuracy_clarity,
+                    EvaluationResult.DUE_DATE_PRECISION: expected_scores.due_date_precision - actual_score.due_date_precision,
+                    EvaluationResult.CONFIDENCE_CALIBRATION: expected_scores.confidence_calibration - actual_score.confidence_calibration,
+                })
+        logger.info(f"Benchmark results for model {judge_model}:")
+    return results
+
 def benchmark_model(llm_client: OpenAI, judge_models: List[str],
                     score_fnc=compute_score
                     ) -> Dict[str, Dict[str, EvaluationResult]]:
-    """Run a benchmark against the given judge model. The goal is to evaluate the effectiveness of a model to act a judge for the application. 
+    """Run a benchmark against the given judge model. The goal is to evaluate the effectiveness of a model to act a judge for the application.
     The score returned by the model is compared against a baseline score expected for each test case and the difference between the score in every category is computed. """
 
     results: Dict[str, Dict[str, EvaluationResult]] = {}
@@ -851,7 +896,7 @@ def benchmark_model(llm_client: OpenAI, judge_models: List[str],
     return results
 
 
-def _build_table(test_outcomes: Dict[str, Dict[str, EvaluationResult]],)-> PrettyTable:
+def _build_table(test_outcomes: Dict[str, Dict[str, EvaluationResult]],) -> PrettyTable:
     result_table = PrettyTable([
         "Model",
         "Test Description",
@@ -875,9 +920,11 @@ def _build_table(test_outcomes: Dict[str, Dict[str, EvaluationResult]],)-> Prett
         result_table.add_divider()
     return result_table
 
+
 def print_benchmark_results(test_outcomes: Dict[str, Dict[str, EvaluationResult]],  printer):
     result_table = _build_table(test_outcomes)
     printer(result_table)
+
 
 def store_benchmark_results_to_markdown_file(test_outcomes: Dict[str, Dict[str, EvaluationResult]], file_path: str):
     """Store benchmark results to a markdown file."""
@@ -885,3 +932,40 @@ def store_benchmark_results_to_markdown_file(test_outcomes: Dict[str, Dict[str, 
     result_table.set_style(TableStyle.MARKDOWN)
     with open(file_path, 'w') as f:
         f.write(result_table.get_string())
+
+
+def store_judge_test_to_jsonl(test_case: Tuple[EmailTestCase, EvaluationResult], json_file_path: str):
+    data = {
+        "test_data": {
+            "description": test_case[0].description,
+            "email": test_case[0].email.to_json(),
+            "expected": [item.to_json() for item in test_case[0].expected],
+            "actual": [item.to_json() for item in test_case[0].actual],
+        },
+        "expected_scores": test_case[1].to_json()
+    }
+    with open(json_file_path, 'a') as f:
+        f.write(json.dumps(data) + '\n')
+
+
+def load_judge_test_from_jsonl(json_file_path: str) -> Iterator[Tuple[EmailTestCase, EvaluationResult]]:
+    """Load judge test cases from a JSONL file."""
+    with open(json_file_path, 'r') as f:
+        for line in f:
+            data = json.loads(line.strip())
+            email_data = data["test_data"]["email"]
+            email = EmailContent.from_json(email_data)
+            expected_items = [load_action_item_from_json(
+                item) for item in data["test_data"]["expected"]]
+            actual_items = [load_action_item_from_json(
+                item) for item in data["test_data"]["actual"]]
+            test_case = EmailTestCase(
+                email=email,
+                expected=expected_items,
+                actual=actual_items,
+                description=data["test_data"]["description"]
+            )
+            expected_scores = EvaluationResult(
+                **data["expected_scores"])
+            yield (test_case, expected_scores)
+
