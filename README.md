@@ -10,7 +10,7 @@ The main goal is to create an assistant that helps you track your deadlines.
 - ✅ **Email Parsing and Activity Tracking**: Utilizes AI to read and understand email content, extracting requests and tasks with details such as due date, owners, and priority.
 - ✅ **Outlook Integration**: Support Outlook mailboxes integration with [O365](https://github.com/O365/python-o365)
 - ✅ **Trello Integration**: Support Trello boards to track the activities extracted from your emails
-- ✅ **Database Integration**: Stores email content and action items in a local database.
+- ✅ **Database Integration**: Stores email id to keep track of the already parsed emails, no personal informations are store here
 - ✅ **Logging and Configuration**: Includes robust logging and configuration management for easy deployment and maintenance.
 - ✅ **Use the your preferred LLM locally or from a provider**: You can use any OpenAI compliant API server and any model you want
 
@@ -43,7 +43,26 @@ uv run matai run
 - `benchmark-judge` - benchmark an ai judge with the a set of well known test cases
 
 ## Configuration
-You can use the sample config.yml file to configure the tool. 
+You can use the sample config.yml file below to configure the tool. 
+A config file similar to the following can also be automatically generated using the command `uv matai init`
+```yaml
+database:
+  path: matai.db
+llm_config:
+  api_key: your_llm_api_key
+  host: http://<openai-compatible-server>/v1
+  model: qwen2.5:7b
+outlook_config:
+  client_id: your_client_id
+  client_secret: your_client_secret
+  tenant_id: your_tenant_id
+trello_config:
+  api_key: your_api_key
+  api_token: your_api_token
+  board: your_board_id
+```
+To generate the outlook credentials have a look at the [o365 documentation](https://o365.github.io/python-o365/latest/getting_started.html#oauth-setup-prerequisite)
+To generate the trello credentials refer to the official [Trello API documentation](https://developer.atlassian.com/cloud/trello/guides/rest-api/authorization/)
 
 ## Contributing
 
