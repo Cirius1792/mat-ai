@@ -69,7 +69,6 @@ def test_print_benchmark_results():
 
     # Assert
     printer_mock.assert_called_once()
-    # You can add more specific assertions here, e.g., by inspecting the arguments of the mock
     call_args = printer_mock.call_args[0][0]
     assert len(call_args.rows) == 1
     assert call_args.field_names == ["Model", "Test Description", "Delta Weighted Score", "Delta in completeness", "Delta in accuracy_clarity", "Delta in due_date_precision", "Delta in confidence_calibration"]

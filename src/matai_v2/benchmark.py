@@ -9,7 +9,7 @@ from matai_v2.email import EmailAddress, EmailContent
 from matai_v2.logging import configure_logging
 from matai_v2.processor import ActionItem, ActionType
 import logging
-from prettytable import PrettyTable
+from prettytable import PrettyTable, TableStyle
 configure_logging()
 logger = logging.getLogger(__name__)
 
@@ -851,7 +851,7 @@ def benchmark_model(llm_client: OpenAI, judge_models: List[str],
     return results
 
 
-def print_benchmark_results(test_outcomes: Dict[str, Dict[str, EvaluationResult]],  printer):
+def _build_table(test_outcomes: Dict[str, Dict[str, EvaluationResult]],)-> PrettyTable:
     result_table = PrettyTable([
         "Model",
         "Test Description",
@@ -872,4 +872,16 @@ def print_benchmark_results(test_outcomes: Dict[str, Dict[str, EvaluationResult]
                 scores.due_date_precision,
                 scores.confidence_calibration,
             ])
+        result_table.add_divider()
+    return result_table
+
+def print_benchmark_results(test_outcomes: Dict[str, Dict[str, EvaluationResult]],  printer):
+    result_table = _build_table(test_outcomes)
     printer(result_table)
+
+def store_benchmark_results_to_markdown_file(test_outcomes: Dict[str, Dict[str, EvaluationResult]], file_path: str):
+    """Store benchmark results to a markdown file."""
+    result_table = _build_table(test_outcomes)
+    result_table.set_style(TableStyle.MARKDOWN)
+    with open(file_path, 'w') as f:
+        f.write(result_table.get_string())
