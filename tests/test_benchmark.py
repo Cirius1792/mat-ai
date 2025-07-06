@@ -1,4 +1,5 @@
-from unittest.mock import MagicMock
+import pytest
+from unittest.mock import MagicMock, patch
 import os
 import sys
 
@@ -6,12 +7,56 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..',
 
 from matai_v2.benchmark import (
     EvaluationResult,
+    benchmark_model_from_dataset, 
     print_benchmark_results, 
     store_judge_test_to_jsonl, 
     load_judge_test_from_jsonl, 
     create_perfect_score_test_case,
 )
 
+def test_benchmark_model_with_mocked_score_fnc():
+    def create_test_data():
+        return [create_perfect_score_test_case()]
+    # Arrange
+    llm_client_mock = MagicMock()
+    judge_models = ["test_model_1", "test_model_2"]
+
+    # Create a mock score_fnc that returns a predictable EvaluationResult
+    mock_score = EvaluationResult(
+        overall_score=4.0,
+        dimension_scores={
+            "completeness": 4.0,
+            "accuracy_clarity": 4.0,
+            "due_date_precision": 4.0,
+            "confidence_calibration": 4.0,
+        }
+    )
+    score_fnc_mock = MagicMock(return_value=mock_score)
+
+    # Act
+    results = benchmark_model_from_dataset(llm_client_mock, judge_models, 
+                                           create_test_data(),
+                                           score_fnc=score_fnc_mock)
+
+    # Assert
+    assert len(results) == len(judge_models)
+    for model in judge_models:
+        assert model in results
+        assert len(results[model]) == 1
+
+    # Verify score_fnc was called for each test case and each model
+    assert score_fnc_mock.call_count == len(judge_models) * len(list(create_test_data()))
+
+    # Check the calculation of the delta
+    for model in judge_models:
+        for test_case, expected_scores in list(create_test_data()):
+            result_score = results[model][test_case.description]
+            expected_delta_overall = expected_scores.overall_score - mock_score.overall_score
+            assert result_score.overall_score == pytest.approx(expected_delta_overall)
+
+            for dim, score in expected_scores.dimension_scores.items():
+                expected_delta_dim = score - mock_score.dimension_scores[dim]
+                assert result_score.dimension_scores[dim] == pytest.approx(expected_delta_dim)
 
 
 def test_store_and_load_judge_test_to_jsonl():

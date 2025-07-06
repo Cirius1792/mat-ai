@@ -468,7 +468,7 @@ def create_perfect_score_test_case() -> Tuple[EmailTestCase, EvaluationResult]:
 
 
 def benchmark_model_from_dataset(llm_client: OpenAI, judge_models: List[str],
-                    test_data: Iterator[Tuple[EmailTestCase, EvaluationResult]],
+                    test_data: List[Tuple[EmailTestCase, EvaluationResult]],
                     score_fnc=compute_score
                     ) -> Dict[str, Dict[str, EvaluationResult]]:
     """Run a benchmark against the given judge model. The goal is to evaluate the effectiveness of a model to act a judge for the application.
@@ -555,8 +555,9 @@ def store_judge_test_to_jsonl(test_case: Tuple[EmailTestCase, EvaluationResult],
         f.write(json.dumps(data) + '\n')
 
 
-def load_judge_test_from_jsonl(json_file_path: str) -> Iterator[Tuple[EmailTestCase, EvaluationResult]]:
+def load_judge_test_from_jsonl(json_file_path: str) -> List[Tuple[EmailTestCase, EvaluationResult]]:
     """Load judge test cases from a JSONL file."""
+    tests = []
     with open(json_file_path, 'r') as f:
         for line in f:
             data = json.loads(line.strip())
@@ -574,5 +575,7 @@ def load_judge_test_from_jsonl(json_file_path: str) -> Iterator[Tuple[EmailTestC
             )
             expected_scores = EvaluationResult(
                 **data["expected_scores"])
-            yield (test_case, expected_scores)
+            tests.append ((test_case, expected_scores))
+    return tests
+
 
