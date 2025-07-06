@@ -1,5 +1,4 @@
-
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass
 from typing import List
 import json
@@ -10,6 +9,7 @@ from matai_v2.email import EmailAddress, EmailContent
 from matai_v2.logging import configure_logging
 from matai_v2.processor import ActionItem, ActionType
 import logging
+from prettytable import PrettyTable
 configure_logging()
 logger = logging.getLogger(__name__)
 
@@ -355,7 +355,7 @@ def analyze_model_performance(test_cases: List[Dict], client: OpenAI, model: str
 
 
 # Example test case for false positives
-def create_false_positive_test_case() -> EmailTestCase:
+def create_false_positive_test_case() -> Tuple[EmailTestCase, EvaluationResult]:
     """Example test case where no action items should be extracted."""
 
     email = EmailContent(
@@ -366,13 +366,13 @@ def create_false_positive_test_case() -> EmailTestCase:
         thread_id="thread-123",
         timestamp=datetime.now(),
         body="""Hi Sarah,
-        
-        Thank you for the excellent presentation yesterday. The client was very impressed 
+
+        Thank you for the excellent presentation yesterday. The client was very impressed
         with our proposal and I believe we're in a strong position for the next phase.
-        
-        I'll be out of office next week for vacation, but please feel free to reach out 
+
+        I'll be out of office next week for vacation, but please feel free to reach out
         if anything urgent comes up.
-        
+
         Best regards,
         John"""
     )
@@ -400,14 +400,23 @@ def create_false_positive_test_case() -> EmailTestCase:
         )
     ]
 
-    return EmailTestCase(email=email,
-                         expected=expected_action_items,
-                         actual=actual_action_items,
-                         description="Test case for false positive detection - no action items should be extracted"
-                         )
+    return (
+        EmailTestCase(email=email,
+                      expected=expected_action_items,
+                      actual=actual_action_items,
+                      description="Test case for false positive detection - no action items should be extracted"
+                      ),
+        EvaluationResult(overall_score=1.5, dimension_scores={
+            # Major penalty for 2 false positives (expected 0)
+            "completeness": 0.0,
+            "accuracy_clarity": 2.0,     # Descriptions are somewhat related but not actual tasks
+            "due_date_precision": 2.0,   # Dates assigned without basis
+            "confidence_calibration": 0.0  # High confidence on completely wrong items
+        })
+    )
 
 
-def create_perfect_score_test_case() -> EmailTestCase:
+def create_perfect_score_test_case() -> Tuple[EmailTestCase, EvaluationResult]:
     """Example test case that should return a perfect score (5.0)."""
 
     email = EmailContent(
@@ -419,21 +428,21 @@ def create_perfect_score_test_case() -> EmailTestCase:
         thread_id="thread-456",
         timestamp=datetime.now(),
         body="""Hi Bob and Carol,
-        
+
         Following our productive meeting this morning, here are the key action items we discussed:
-        
-        1. Bob, please finalize the technical specifications document by Friday, March 15th. 
+
+        1. Bob, please finalize the technical specifications document by Friday, March 15th.
            This is critical for the client presentation next week.
-        
-        2. Carol, we need you to coordinate with the design team and schedule a review session 
+
+        2. Carol, we need you to coordinate with the design team and schedule a review session
            for next Tuesday, March 12th at 2 PM.
-        
-        3. Both of you should prepare your quarterly budget reports and submit them to me 
+
+        3. Both of you should prepare your quarterly budget reports and submit them to me
            by Thursday, March 14th, so we can review them before the board meeting.
-        
-        Please confirm receipt of these tasks and let me know if you have any questions 
+
+        Please confirm receipt of these tasks and let me know if you have any questions
         or need additional resources.
-        
+
         Best regards,
         Alice"""
     )
@@ -495,15 +504,22 @@ def create_perfect_score_test_case() -> EmailTestCase:
         )
     ]
 
-    return EmailTestCase(email=email,
-                         expected=expected_action_items,
-                         actual=actual_action_items,
-                         description="Test case for perfect score - all action items extracted correctly with precise dates and confidence"
-                         )
+    return (
+        EmailTestCase(email=email,
+                      expected=expected_action_items,
+                      actual=actual_action_items,
+                      description="Test case for perfect score - all action items extracted correctly with precise dates and confidence"
+                      ),
+        EvaluationResult(overall_score=5.0, dimension_scores={
+            "completeness": 5.0,        # All expected items extracted, no false positives
+            "accuracy_clarity": 5.0,     # Perfect match in descriptions
+            "due_date_precision": 5.0,   # Exact due dates
+            "confidence_calibration": 5.0  # Confidence scores match exactly
+        }))
 
 
 # Example test case for near-perfect score (minor variations)
-def create_near_perfect_test_case() -> EmailTestCase:
+def create_near_perfect_test_case() -> Tuple[EmailTestCase, EvaluationResult]:
     """Example test case that should return a near-perfect score (4.0-4.5)."""
 
     email = EmailContent(
@@ -514,15 +530,15 @@ def create_near_perfect_test_case() -> EmailTestCase:
         thread_id="thread-789",
         timestamp=datetime.now(),
         body="""Team,
-        
+
         Thanks for the great discussion in today's sync. Here's what we agreed on:
-        
+
         - Please review the user feedback document and provide your thoughts by end of week
         - We need to update the project timeline based on the new requirements
         - Don't forget to submit your timesheets by Monday as usual
-        
+
         Let's keep the momentum going!
-        
+
         Best,
         Manager"""
     )
@@ -584,11 +600,21 @@ def create_near_perfect_test_case() -> EmailTestCase:
         )
     ]
 
-    return EmailTestCase(email=email,
-                         expected=expected_action_items,
-                         actual=actual_action_items,
-                         description="Test case for near-perfect score - minor variations in wording and dates"
-                         )
+    return (
+        EmailTestCase(email=email,
+                      expected=expected_action_items,
+                      actual=actual_action_items,
+                      description="Test case for near-perfect score - minor variations in wording and dates"
+                      ),
+        EvaluationResult(overall_score=4.5, dimension_scores={
+            "completeness": 5.0,        # All expected items extracted, no false positives
+            # Minor wording differences ("share thoughts" vs "provide thoughts")
+            "accuracy_clarity": 4.0,
+            # One date is 1 day off ("end of week" interpretation)
+            "due_date_precision": 4.0,
+            # Close but not perfect confidence scores (±0.03-0.05)
+            "confidence_calibration": 4.0
+        }))
 
 
 # Comprehensive test suite
@@ -604,7 +630,7 @@ def create_comprehensive_test_suite():
     ]
 
 
-def create_missing_action_items_test_case() -> EmailTestCase:
+def create_missing_action_items_test_case() -> Tuple[EmailTestCase, EvaluationResult]:
     """Test case where model misses some action items."""
 
     email = EmailContent(
@@ -616,15 +642,15 @@ def create_missing_action_items_test_case() -> EmailTestCase:
         thread_id="thread-urgent",
         timestamp=datetime.now(),
         body="""Dev Team,
-        
+
         We have three critical issues that need immediate attention:
-        
+
         1. The payment gateway is down - needs to be fixed by 5 PM today
         2. Users are reporting login issues - investigate and resolve ASAP
         3. The mobile app is crashing on iOS devices - patch needed by tomorrow
-        
+
         Please prioritize these issues and keep me updated on progress.
-        
+
         Thanks,
         Support Team"""
     )
@@ -677,14 +703,23 @@ def create_missing_action_items_test_case() -> EmailTestCase:
         # Missing the iOS crash issue
     ]
 
-    return EmailTestCase(email=email,
-                         expected=expected_action_items,
-                         actual=actual_action_items,
-                         description="Test case for missing action items - model should catch incompleteness"
-                         )
+    return (
+        EmailTestCase(email=email,
+                      expected=expected_action_items,
+                      actual=actual_action_items,
+                      description="Test case for missing action items - model should catch incompleteness"
+                      ),
+        EvaluationResult(overall_score=2.8, dimension_scores={
+            # Missed 1 out of 3 action items (66% recall)
+            "completeness": 2.0,
+            "accuracy_clarity": 4.0,     # The extracted items are accurate
+            "due_date_precision": 4.0,   # Dates correct for extracted items
+            "confidence_calibration": 3.0  # Confidence slightly off on one item
+        })
+    )
 
 
-def create_wrong_due_dates_test_case() -> EmailTestCase:
+def create_wrong_due_dates_test_case() -> Tuple[EmailTestCase, EvaluationResult]:
     """Test case where model gets due dates wrong."""
 
     email = EmailContent(
@@ -697,15 +732,15 @@ def create_wrong_due_dates_test_case() -> EmailTestCase:
         thread_id="thread-conf",
         timestamp=datetime.now(),
         body="""Marketing Team,
-        
+
         The annual conference is in 3 weeks. Here's what we need to prepare:
-        
+
         - Marketing materials need to be ready 1 week before the conference
         - Social media campaign should start 2 weeks before
         - Press release must be sent out 5 days before the event
-        
+
         Please let me know if you need any additional resources.
-        
+
         Best,
         Event Coordinator"""
     )
@@ -766,8 +801,55 @@ def create_wrong_due_dates_test_case() -> EmailTestCase:
         )
     ]
 
-    return EmailTestCase(email=email,
-                         expected=expected_action_items,
-                         actual=actual_action_items,
-                         description="Test case for wrong due dates - model should catch date calculation errors"
-                         )
+    return (EmailTestCase(email=email,
+                          expected=expected_action_items,
+                          actual=actual_action_items,
+                          description="Test case for wrong due dates - model should catch date calculation errors"
+                          ),
+
+            EvaluationResult(overall_score=3.0, dimension_scores={
+                "completeness": 5.0,        # All items were extracted
+                "accuracy_clarity": 4.0,     # Descriptions are correct
+                "due_date_precision": 1.0,   # All dates are significantly wrong
+                "confidence_calibration": 3.0  # Confidence scores are close
+            })
+            )
+
+
+def benchmark_model(llm_client: OpenAI, judge_models: List[str]):
+    """Run a benchmark against the given judge model. The goal is to evaluate the effectiveness of a model to act a judge for the application. 
+    The score returned by the model is compared against a baseline score expected for each test case and the difference between the score in every category is computed. """
+
+    for judge_model in judge_models:
+        result_table = PrettyTable([
+            "Description",
+            "Delta Weighted Score",
+            f"Delta in {EvaluationResult.COMPLETENESS}",
+            f"Delta in {EvaluationResult.ACCURACY_CLARITY}",
+            f"Delta in {EvaluationResult.DUE_DATE_PRECISION}",
+            f"Delta in {EvaluationResult.CONFIDENCE_CALIBRATION}"
+        ])
+        for test_case, expected_scores in create_comprehensive_test_suite():
+            actual_score = compute_score(
+                test_case.email,
+                test_case.expected,
+                test_case.actual,
+                llm_client,
+                judge_model,
+            )
+            if actual_score is None:
+                logger.error(
+                    f"Error evaluating test case: {test_case.description}")
+                continue
+            logger.info(
+                f"{test_case.description}: \t {actual_score.get_weighted_score()}")
+            result_table.add_row([
+                test_case.description,
+                expected_scores.get_weighted_score() - actual_score.get_weighted_score(),
+                expected_scores.completeness - actual_score.completeness,
+                expected_scores.accuracy_clarity - actual_score.accuracy_clarity,
+                expected_scores.due_date_precision - actual_score.due_date_precision,
+                expected_scores.confidence_calibration - actual_score.confidence_calibration,
+            ])
+        logger.info(f"Benchmark results for model {judge_model}:")
+        logger.info(result_table)

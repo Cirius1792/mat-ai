@@ -6,7 +6,7 @@ import logging
 from datetime import datetime, timedelta
 from prettytable import PrettyTable
 
-from matai_v2.benchmark import EvaluationResult, compute_score, create_comprehensive_test_suite
+from matai_v2.benchmark import EvaluationResult, benchmark_model, compute_score, create_comprehensive_test_suite
 from matai_v2.configuration import create_sample_config, load_config_from_yaml, save_config_to_yaml
 from matai_v2.context import ApplicationContext
 from matai_v2.logging import configure_logging
@@ -157,32 +157,7 @@ def benchmark(config):
         base_url=config.llm_config.host, api_key=config.llm_config.api_key)
     # Replace with your actual model identifier
     judge_model = config.llm_config.model
-    result_table = PrettyTable([
-        "Description",
-        "Weighetd Score",
-        EvaluationResult.COMPLETENESS,
-        EvaluationResult.ACCURACY_CLARITY,
-        EvaluationResult.DUE_DATE_PRECISION,
-        EvaluationResult.CONFIDENCE_CALIBRATION
-    ])
-    for test_case in create_comprehensive_test_suite():
-        evaluation_result = compute_score(
-            test_case.email,
-            test_case.expected,
-            test_case.actual,
-            llm_client,
-            judge_model,
-        )
-        if evaluation_result is None:
-            click.echo(f"Error evaluating test case: {test_case.description}")
-            continue
-        print(f"{test_case.description}: \t {evaluation_result.get_weighted_score()}")
-        result_table.add_row([
-            test_case.description,
-            evaluation_result.get_weighted_score(),
-            evaluation_result.completeness,
-            evaluation_result.accuracy_clarity,
-            evaluation_result.due_date_precision,
-            evaluation_result.confidence_calibration
-        ])
-    print(result_table)
+    benchmark_model(
+        llm_client,
+        [judge_model],
+    )
