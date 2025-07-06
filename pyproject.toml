@@ -18,7 +18,7 @@ dependencies = [
 ]
 
 [project.scripts]
-matai-v2 = "matai_v2:main"
+matai = "matai_v2:main"
 
 [build-system]
 requires = ["hatchling"]

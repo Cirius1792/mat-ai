@@ -147,7 +147,7 @@ def init():
         click.echo(f"Error creating sample configuration: {e}")
 
 
-@cli.command("benchmark", short_help="Score the application effectiveness with the given llm configuration against a known dataset")
+@cli.command("benchmark-judge", short_help="Score an AI Judge with the given llm configuration against a known dataset")
 @click.option("--models", type=str, help="Comma-separated list of model identifiers to benchmark. If none is provided, the model configured in the config file will be used")
 @click.option("--config", type=str, default=None, help="Path to the configuration file")
 def benchmark(models, config):
