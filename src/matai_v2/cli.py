@@ -6,7 +6,7 @@ import logging
 from datetime import datetime, timedelta
 from prettytable import PrettyTable
 
-from matai_v2.benchmark import EvaluationResult, benchmark_model, compute_score, create_comprehensive_test_suite
+from matai_v2.benchmark import EvaluationResult, benchmark_model, compute_score, create_comprehensive_test_suite, print_benchmark_results
 from matai_v2.configuration import create_sample_config, load_config_from_yaml, save_config_to_yaml
 from matai_v2.context import ApplicationContext
 from matai_v2.logging import configure_logging
@@ -160,7 +160,8 @@ def benchmark(models, config):
     judge_model = [config.llm_config.model]
     if models:
         judge_model = models.split(',')
-    benchmark_model(
+    results = benchmark_model(
         llm_client,
         judge_model,
     )
+    print_benchmark_results(results, click.echo)

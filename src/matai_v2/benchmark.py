@@ -816,21 +816,17 @@ def create_wrong_due_dates_test_case() -> Tuple[EmailTestCase, EvaluationResult]
             )
 
 
-def benchmark_model(llm_client: OpenAI, judge_models: List[str]):
+def benchmark_model(llm_client: OpenAI, judge_models: List[str],
+                    score_fnc=compute_score
+                    ) -> Dict[str, Dict[str, EvaluationResult]]:
     """Run a benchmark against the given judge model. The goal is to evaluate the effectiveness of a model to act a judge for the application. 
     The score returned by the model is compared against a baseline score expected for each test case and the difference between the score in every category is computed. """
 
+    results: Dict[str, Dict[str, EvaluationResult]] = {}
     for judge_model in judge_models:
-        result_table = PrettyTable([
-            "Description",
-            "Delta Weighted Score",
-            f"Delta in {EvaluationResult.COMPLETENESS}",
-            f"Delta in {EvaluationResult.ACCURACY_CLARITY}",
-            f"Delta in {EvaluationResult.DUE_DATE_PRECISION}",
-            f"Delta in {EvaluationResult.CONFIDENCE_CALIBRATION}"
-        ])
+        results[judge_model] = {}
         for test_case, expected_scores in create_comprehensive_test_suite():
-            actual_score = compute_score(
+            actual_score = score_fnc(
                 test_case.email,
                 test_case.expected,
                 test_case.actual,
@@ -843,13 +839,37 @@ def benchmark_model(llm_client: OpenAI, judge_models: List[str]):
                 continue
             logger.info(
                 f"{test_case.description}: \t {actual_score.get_weighted_score()}")
-            result_table.add_row([
-                test_case.description,
-                expected_scores.get_weighted_score() - actual_score.get_weighted_score(),
-                expected_scores.completeness - actual_score.completeness,
-                expected_scores.accuracy_clarity - actual_score.accuracy_clarity,
-                expected_scores.due_date_precision - actual_score.due_date_precision,
-                expected_scores.confidence_calibration - actual_score.confidence_calibration,
-            ])
+            results[judge_model][test_case.description] = EvaluationResult(
+                expected_scores.overall_score - actual_score.overall_score,
+                {
+                    EvaluationResult.COMPLETENESS: expected_scores.completeness - actual_score.completeness,
+                    EvaluationResult.ACCURACY_CLARITY: expected_scores.accuracy_clarity - actual_score.accuracy_clarity,
+                    EvaluationResult.DUE_DATE_PRECISION: expected_scores.due_date_precision - actual_score.due_date_precision,
+                    EvaluationResult.CONFIDENCE_CALIBRATION: expected_scores.confidence_calibration - actual_score.confidence_calibration,
+                })
         logger.info(f"Benchmark results for model {judge_model}:")
-        logger.info(result_table)
+    return results
+
+
+def print_benchmark_results(test_outcomes: Dict[str, Dict[str, EvaluationResult]],  printer):
+    result_table = PrettyTable([
+        "Model",
+        "Test Description",
+        "Delta Weighted Score",
+        f"Delta in {EvaluationResult.COMPLETENESS}",
+        f"Delta in {EvaluationResult.ACCURACY_CLARITY}",
+        f"Delta in {EvaluationResult.DUE_DATE_PRECISION}",
+        f"Delta in {EvaluationResult.CONFIDENCE_CALIBRATION}"
+    ])
+    for model, results in test_outcomes.items():
+        for test, scores in results.items():
+            result_table.add_row([
+                model,
+                test,
+                scores.get_weighted_score(),
+                scores.completeness,
+                scores.accuracy_clarity,
+                scores.due_date_precision,
+                scores.confidence_calibration,
+            ])
+    printer(result_table)
