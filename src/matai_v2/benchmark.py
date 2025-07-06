@@ -277,7 +277,7 @@ def compute_score(email: EmailContent,
                   expected_action_items: List[ActionItem],
                   actual_action_items: List[ActionItem],
                   llm_client,
-                  judge_model) -> Optional[EvaluationResult]:
+                  judge_model) -> EvaluationResult:
     """
     Compute comprehensive evaluation for extracted action items using LLM judge.
 
@@ -323,11 +323,29 @@ def compute_score(email: EmailContent,
                 dimension_scores=result["dimension_scores"],
             )
         except (json.JSONDecodeError, KeyError, IndexError) as e:
-            # Fallback: try to extract scores from response text
+            logger.warning(f"LLM response parsing failed on attempt {i + 1}/{max_retries}. Error: {e}")
             if i == max_retries - 1:
                 logger.error(
-                    f"Failed to parse LLM response after {max_retries} attempts: {e}")
-                raise e
+                    f"Failed to parse LLM response after {max_retries} attempts. Returning zero score.")
+                return EvaluationResult(
+                    overall_score=0.0,
+                    dimension_scores={
+                        EvaluationResult.COMPLETENESS: 0.0,
+                        EvaluationResult.ACCURACY_CLARITY: 0.0,
+                        EvaluationResult.DUE_DATE_PRECISION: 0.0,
+                        EvaluationResult.CONFIDENCE_CALIBRATION: 0.0,
+                    }
+                )
+    # This path should not be hit if max_retries > 0
+    return EvaluationResult(
+        overall_score=0.0,
+        dimension_scores={
+            EvaluationResult.COMPLETENESS: 0.0,
+            EvaluationResult.ACCURACY_CLARITY: 0.0,
+            EvaluationResult.DUE_DATE_PRECISION: 0.0,
+            EvaluationResult.CONFIDENCE_CALIBRATION: 0.0,
+        }
+    )
 
 
 def analyze_model_performance(test_cases: List[Dict], client: OpenAI, model: str) -> Dict[str, float]:

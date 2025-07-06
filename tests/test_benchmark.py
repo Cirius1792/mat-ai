@@ -1,7 +1,9 @@
 import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, patch, call
 import os
 import sys
+import json
+from datetime import datetime
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
 
@@ -12,7 +14,62 @@ from matai_v2.benchmark import (
     store_judge_test_to_jsonl, 
     load_judge_test_from_jsonl, 
     create_perfect_score_test_case,
+    compute_score,
 )
+from matai_v2.email import EmailContent, EmailAddress
+from matai_v2.processor import ActionItem, ActionType
+
+def test_compute_score_retry_on_key_error():
+    # Arrange
+    llm_client_mock = MagicMock()
+    mock_response_invalid = MagicMock()
+    mock_response_invalid.choices[0].message.content = '{"invalid_key": "some_value"}'
+    
+    mock_response_valid = MagicMock()
+    valid_content = {
+        "overall_score": 4.0,
+        "dimension_scores": {
+            "completeness": 4.0,
+            "accuracy_clarity": 4.0,
+            "due_date_precision": 4.0,
+            "confidence_calibration": 4.0,
+        }
+    }
+    mock_response_valid.choices[0].message.content = json.dumps(valid_content)
+
+    llm_client_mock.chat.completions.create.side_effect = [
+        mock_response_invalid,
+        mock_response_valid
+    ]
+
+    email = EmailContent("id", "subject", EmailAddress("test", "test@test.com", "test.com"), [], "thread_id", datetime(2025, 1, 1), "body")
+    
+    # Act
+    result = compute_score(email, [], [], llm_client_mock, "test_model")
+
+    # Assert
+    assert llm_client_mock.chat.completions.create.call_count == 2
+    assert result.overall_score == 4.0
+
+def test_compute_score_returns_zero_on_persistent_bad_json():
+    # Arrange
+    llm_client_mock = MagicMock()
+    mock_response = MagicMock()
+    mock_response.choices[0].message.content = '{"bad_json": "missing_fields"}'
+    llm_client_mock.chat.completions.create.return_value = mock_response
+
+    email = EmailContent("id", "subject", EmailAddress("test", "test@test.com", "test.com"), [], "thread_id", datetime(2025, 1, 1), "body")
+
+    # Act
+    result = compute_score(email, [], [], llm_client_mock, "test_model")
+
+    # Assert
+    assert llm_client_mock.chat.completions.create.call_count == 3  # Max retries
+    assert result.overall_score == 0.0
+    assert result.completeness == 0.0
+    assert result.accuracy_clarity == 0.0
+    assert result.due_date_precision == 0.0
+    assert result.confidence_calibration == 0.0
 
 def test_benchmark_model_with_mocked_score_fnc():
     def create_test_data():
