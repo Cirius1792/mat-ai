@@ -56,7 +56,7 @@ class Config:
             'outlook_config': self.outlook_config.__dict__,
             'trello_config': self.trello_config.__dict__,
             # 'filters': self.filters.__dict__,
-            # 'llm_config': self.llm_config.__dict__,
+            'llm_config': self.llm_config.__dict__,
             # 'confidence_level': self.confidence_level
         }
 
@@ -93,6 +93,7 @@ class Config:
             # confidence_level=data['confidence_level']
         )
 
+
 def create_sample_config() -> Config:
     """Create a sample configuration with default values."""
     return Config(
@@ -112,9 +113,9 @@ def create_sample_config() -> Config:
             host="https://api.example.com",
             model="gpt-3.5-turbo",
             api_key="your_llm_api_key",
-            provider="openai"
         )
     )
+
 
 def save_config_to_yaml(config: Config, file_path='config.yaml'):
     """Save configuration to YAML file
@@ -160,4 +161,3 @@ def load_config_from_yaml(file_path='config.yaml') -> Config:
         config = Config.from_dict(config_dict)
         logger.info("Loaded configuration: %s", config)
         return config
-

@@ -71,11 +71,12 @@ def test_config_to_dict_default_keys_and_values():
     cfg = Config()
     as_dict = cfg.to_dict()
     # to_dict only includes database, outlook_config, trello_config
-    assert set(as_dict.keys()) == {"database", "outlook_config", "trello_config"}
+    assert set(as_dict.keys()) == {"database", "outlook_config", "trello_config", "llm_config"}
     # Values match underlying dataclasses
     assert as_dict["database"] == cfg.database.__dict__
     assert as_dict["outlook_config"] == cfg.outlook_config.__dict__
     assert as_dict["trello_config"] == cfg.trello_config.__dict__
+    assert as_dict["llm_config"] == cfg.llm_config.__dict__
 
 
 def test_config_from_dict_minimal_and_full():
