@@ -1,9 +1,12 @@
 import click
+from openai import OpenAI
 import yaml
 import os
 import logging
 from datetime import datetime, timedelta
+from prettytable import PrettyTable
 
+from matai_v2.benchmark import EvaluationResult, compute_score, create_comprehensive_test_suite
 from matai_v2.configuration import create_sample_config, load_config_from_yaml, save_config_to_yaml
 from matai_v2.context import ApplicationContext
 from matai_v2.logging import configure_logging
@@ -14,6 +17,9 @@ configure_logging()
 logger = logging.getLogger(__name__)
 
 
+configuration_path = os.getenv('PMAI_CONFIG_PATH', './config/config.yaml')
+
+
 @click.group()
 @click.pass_context
 def cli(ctx):
@@ -22,13 +28,13 @@ def cli(ctx):
     if "app_ctx" in ctx.obj:
         return
 
-    configuration_path = os.getenv('PMAI_CONFIG_PATH', './config/config.yaml')
     try:
         logger.info("Loading configuration from %s", configuration_path)
         config = load_config_from_yaml(configuration_path)
         logger.info("Configuration loaded successfully")
     except FileNotFoundError:
         click.echo("Error: Configuration file not found.")
+        # FIXME: create the required folders to store the configuration if they do not exists
         config = create_sample_config()
         save_config_to_yaml(config, configuration_path)
         click.echo("Sample configuration created at " + configuration_path)
@@ -126,3 +132,59 @@ def run(ctx, days):
 
     except Exception as e:
         click.echo(f"Error running the application: {e}")
+
+
+@cli.command("init", short_help="Initialize the application with a sample configuration")
+def init():
+    """Initialize the application with a sample configuration."""
+    configuration_path = os.getenv('PMAI_CONFIG_PATH', './config/config.yaml')
+    try:
+        logger.info("Creating sample configuration at %s", configuration_path)
+        config = create_sample_config()
+        save_config_to_yaml(config, configuration_path)
+        click.echo("Sample configuration created at " + configuration_path)
+    except Exception as e:
+        click.echo(f"Error creating sample configuration: {e}")
+
+
+@cli.command("benchmark", short_help="Score the application effectiveness with the given llm configuration against a known dataset")
+@click.option("--config", type=str)
+def benchmark(config):
+    config_path = config if config is not None else configuration_path
+    config = load_config_from_yaml(config_path)
+    # Assuming you have an OpenAI client configured
+    llm_client = OpenAI(
+        base_url=config.llm_config.host, api_key=config.llm_config.api_key)
+    # Replace with your actual model identifier
+    judge_model = config.llm_config.model
+    result_table = PrettyTable([
+        "Description",
+        "Weighetd Score",
+        "Performance Summary",
+        EvaluationResult.COMPLETENESS,
+        EvaluationResult.ACCURACY_CLARITY,
+        EvaluationResult.DUE_DATE_PRECISION,
+        EvaluationResult.CONFIDENCE_CALIBRATION
+    ])
+    for test_case in create_comprehensive_test_suite():
+        evaluation_result = compute_score(
+            test_case.email,
+            test_case.expected,
+            test_case.actual,
+            llm_client,
+            judge_model,
+        )
+        if evaluation_result is None:
+            click.echo(f"Error evaluating test case: {test_case.description}")
+            continue
+        print(f"{test_case.description}: \t {evaluation_result.get_weighted_score()}")
+        result_table.add_row([
+            test_case.description,
+            evaluation_result.get_weighted_score(),
+            evaluation_result.get_performance_summary(),
+            evaluation_result.completeness,
+            evaluation_result.accuracy_clarity,
+            evaluation_result.due_date_precision,
+            evaluation_result.confidence_calibration
+        ])
+    print(result_table)
