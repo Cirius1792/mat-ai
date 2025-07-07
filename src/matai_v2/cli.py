@@ -93,7 +93,6 @@ def run(ctx, days):
         # Initialize the Trello board manager with the configured Trello client and board
         trello_manager = TrelloBoardManager(
             ctx_app.trello_client, ctx_app.config.trello_config.board)
-        trello_manager.setup()
 
         # Calculate the start date taking the current date time and then subtracting the days variable
         click.echo(f"Processing emails from the last {days} days...")

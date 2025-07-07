@@ -105,15 +105,15 @@ class TestTrelloManager(TestCase):
         self.mock_client = MockTrelloClient()
         self.manager = TrelloBoardManager(self.mock_client, board_id="1")
 
-    def test_setup_creates_mantis_list(self):
+    def test_setup_creates_list(self):
         """setup() should create a 'Mantis' list if absent and store its ID."""
-        self.manager.setup()
+        list_name = "matai"
+        self.manager.setup(list_name)
         self.assertIsNotNone(self.manager.list_id)
-        self.assertIn("Mantis", [lst.name for lst in self.mock_client.created_lists])
+        self.assertIn(list_name, [lst.name for lst in self.mock_client.created_lists])
 
     def test_create_tasks_creates_cards(self):
         """create_tasks() should result in a new card on the mock client."""
-        self.manager.setup()
         action_item = ActionItem(
             action_type=ActionType.TASK,
             description="Demo task",

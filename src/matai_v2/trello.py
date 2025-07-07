@@ -297,7 +297,7 @@ class TrelloBoardManager:
     def _create_card_description(self, subject: str, body: str) -> str:
         return f"Thread Subject: {subject}\nOriginal Message: \n{body}"
 
-    def setup(self):
+    def setup(self, list_name: str):
         """
         Set up the target board by ensuring the presence of a specific list.
 
@@ -315,7 +315,7 @@ class TrelloBoardManager:
         if not is_configured:
             logger.info("No list %s found in board %s. Creating it...",
                         self._app_board, self._board_id)
-            default_list = self._client.create_list(self._board_id, "Mantis")
+            default_list = self._client.create_list(self._board_id, list_name)
             self.list_id = default_list.id
             logger.info("List %s created with ID %s",
                         self._app_board, self.list_id)
@@ -332,9 +332,10 @@ class TrelloBoardManager:
     def create_tasks(self,
                         subject: str,
                         body: str,
-                        action_items: List[ActionItem]):
+                        action_items: List[ActionItem], 
+                    list_name: str = "MAT.AI"):
         if self.list_id is None:
-            self.setup()
+            self.setup(list_name)
 
         assert self.list_id is not None, "List ID must be set before creating tasks"
         for action_item in action_items:
