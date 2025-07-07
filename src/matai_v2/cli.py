@@ -101,7 +101,7 @@ def run(ctx, days):
 
         # Retrieve emails from the Outlook client
         emails = ctx_app.outlook_email_client.read_messages(
-            start_date=start_date)
+            start_date=start_date, filters=ctx_app.config.filters)
         # Filter email to avoid already processed once
         processed_emails_store = ctx_app.store
         processed_emails = {
@@ -134,9 +134,10 @@ def run(ctx, days):
 
 
 @cli.command("init", short_help="Initialize the application with a sample configuration")
-def init():
+@click.option("--config", type=click.Path(), default=None, help="Path to the configuration file")
+def init(config):
     """Initialize the application with a sample configuration."""
-    configuration_path = os.getenv('PMAI_CONFIG_PATH', './config/config.yaml')
+    configuration_path = config if config else os.getenv('PMAI_CONFIG_PATH', './config/config.yaml')
     try:
         logger.info("Creating sample configuration at %s", configuration_path)
         config = create_sample_config()
