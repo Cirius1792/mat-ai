@@ -1,5 +1,5 @@
 # MAT.AI: an AI Powered Mail Activity Tracker
-<!-- ![Tests](https://github.com/cirius1792/matai-v2/actions/workflows/tests.yml/badge.svg) -->
+![Tests](https://github.com/cirius1792/matai-v2/actions/workflows/tests.yml/badge.svg)
 ## Overview
 
 This project is designed to automate the extraction and management of action items from email communications. It leverages AI to parse emails, identify actionable tasks, and store them on a Trello board. 
@@ -41,6 +41,7 @@ uv run matai run
 - `authenticate` – Authenticate the application with the email server.
 - `run` – Process new emails and extract action items.
 - `benchmark-judge` - benchmark an ai judge with the a set of well known test cases
+- `init` - Creates a sample config file
 
 ## Configuration
 You can use the sample config.yml file below to configure the tool. 
@@ -56,6 +57,9 @@ outlook_config:
   client_id: your_client_id
   client_secret: your_client_secret
   tenant_id: your_tenant_id
+filters: 
+  recipients: 
+  - "my-email@domain.com"
 trello_config:
   api_key: your_api_key
   api_token: your_api_token
