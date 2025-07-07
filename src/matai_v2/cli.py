@@ -78,7 +78,7 @@ def authenticate_command(ctx):
 
 
 @cli.command("run", short_help="Run the application to process new emails")
-@click.argument("days", type=int, default=2)
+@click.option("--days", "-d", type=int, default=2)
 @click.pass_context
 def run(ctx, days):
     """Run the application processing the new emails not already processed and storing the identified action item on the given board. 
