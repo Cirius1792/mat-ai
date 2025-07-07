@@ -10,11 +10,12 @@ from matai_v2.trello import (
     AttachmentsByType,
     TrelloAttachments,
     TrelloBoardManager,
+    TrelloClient,
 )
 from matai_v2.processor import ActionItem, ActionType
 
 
-class MockTrelloClient:
+class MockTrelloClient(TrelloClient):
     """Simple in-memory stub of the TrelloClient API surface used by TrelloBoardManager."""
 
     def __init__(self):
@@ -128,6 +129,6 @@ class TestTrelloManager(TestCase):
         )
         self.assertEqual(len(self.mock_client.created_cards), 1)
         created_card = self.mock_client.created_cards[0]
-        expected_name = f"{str(action_item.action_type)}: {action_item.description}"
+        expected_name = f"TASK: {action_item.description}"
         self.assertEqual(created_card.name, expected_name)
 

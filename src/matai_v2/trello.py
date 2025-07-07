@@ -327,7 +327,7 @@ class TrelloBoardManager:
                         self._app_board, self.list_id)
 
     def _create_card_name(self, action_item: ActionItem) -> str:
-        return f"{str(action_item.action_type)}: {action_item.description}"
+        return f"{action_item.action_type.name}: {action_item.description}"
 
     def create_tasks(self,
                         subject: str,
