@@ -611,9 +611,20 @@ def load_judge_test_from_jsonl(json_file_path: str) -> List[Tuple[EmailTestCase,
 
 
 if __name__ == '__main__':
-    # Take as program argument a path where a file will be created AI!
+    import argparse
 
-    file_path =""
+    parser = argparse.ArgumentParser(
+        description="Store an application test case to a JSONL file."
+    )
+    parser.add_argument(
+        "output",
+        nargs="?",
+        default="application_test_cases.jsonl",
+        help="Path to the JSONL file where the test case will be appended.",
+    )
+    args = parser.parse_args()
+
+    file_path = args.output
 
 
     email = EmailContent(
