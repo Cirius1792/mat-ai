@@ -2,6 +2,7 @@ import yaml
 from typing import List
 from dataclasses import dataclass, field
 
+from pathlib import Path
 import logging
 
 logger = logging.getLogger(__name__)
@@ -133,8 +134,11 @@ def save_config_to_yaml(config: Config, file_path='config.yaml'):
     logger.debug("Configuration: %s", config)
     logger.debug(f"Saving config to {file_path}")
 
-    # If the the path is pointing to folders that do not exist, then they should be created. The test suite for this function should be enriched also with the scenario fo the target folder that doe not exist  AI!
-    with open(file_path, 'w') as file:
+    path = Path(file_path)
+    # Ensure the directory exists before writing
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    with path.open('w') as file:
         yaml.safe_dump(config.to_dict(), file, default_flow_style=False)
 
 

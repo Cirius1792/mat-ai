@@ -178,3 +178,14 @@ def test_load_config_invalid_yaml(tmp_path):
     bad_file.write_text("not: [unbalanced")
     with pytest.raises(yaml.YAMLError):
         load_config_from_yaml(file_path=str(bad_file))
+
+
+def test_save_config_creates_missing_directories(tmp_path):
+    """Ensure save_config_to_yaml creates intermediate directories if they do not exist."""
+    nested_file = tmp_path / "nested" / "dir" / "cfg.yaml"
+    cfg = Config()
+    save_config_to_yaml(cfg, file_path=str(nested_file))
+    assert nested_file.exists()
+    with open(nested_file, 'r') as f:
+        data = yaml.safe_load(f)
+    assert data == cfg.to_dict()
