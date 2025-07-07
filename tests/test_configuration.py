@@ -12,7 +12,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..',
 from matai_v2.configuration import (
     OutlookConfig,
     TrelloConfig,
-    FiltersConfig,
+    EmailFilter,
     DatabaseConfig,
     LLMConfig,
     Config,
@@ -44,10 +44,10 @@ def test_dataclass_defaults_and_values():
     assert tc2.api_token == "tok"
     assert tc2.board == "b"
 
-    # FiltersConfig defaults and override
-    fc = FiltersConfig()
+    # EmailFilter defaults and override
+    fc = EmailFilter()
     assert isinstance(fc.recipients, list) and fc.recipients == []
-    fc2 = FiltersConfig(recipients=["a@example.com", "b@example.com"])
+    fc2 = EmailFilter(recipients=["a@example.com", "b@example.com"])
     assert fc2.recipients == ["a@example.com", "b@example.com"]
 
     # DatabaseConfig default and override
@@ -71,12 +71,13 @@ def test_config_to_dict_default_keys_and_values():
     cfg = Config()
     as_dict = cfg.to_dict()
     # to_dict only includes database, outlook_config, trello_config
-    assert set(as_dict.keys()) == {"database", "outlook_config", "trello_config", "llm_config"}
+    assert set(as_dict.keys()) == {"database", "outlook_config", "trello_config", "llm_config", "filters"}
     # Values match underlying dataclasses
     assert as_dict["database"] == cfg.database.__dict__
     assert as_dict["outlook_config"] == cfg.outlook_config.__dict__
     assert as_dict["trello_config"] == cfg.trello_config.__dict__
     assert as_dict["llm_config"] == cfg.llm_config.__dict__
+    assert as_dict["filters"] == cfg.filters.__dict__
 
 
 def test_config_from_dict_minimal_and_full():

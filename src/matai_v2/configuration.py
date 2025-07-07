@@ -23,7 +23,7 @@ class TrelloConfig():
 
 
 @dataclass
-class FiltersConfig:
+class EmailFilter:
     recipients: List[str] = field(default_factory=list)
 
 
@@ -45,7 +45,7 @@ class Config:
     database: DatabaseConfig = field(default_factory=DatabaseConfig)
     outlook_config: OutlookConfig = field(default_factory=OutlookConfig)
     trello_config: TrelloConfig = field(default_factory=TrelloConfig)
-    # filters: FiltersConfig
+    filters: EmailFilter = field(default_factory=EmailFilter)
     llm_config: LLMConfig = field(default_factory=LLMConfig)
    # confidence_level: float = 0.85
 
@@ -55,7 +55,7 @@ class Config:
             'database': self.database.__dict__,
             'outlook_config': self.outlook_config.__dict__,
             'trello_config': self.trello_config.__dict__,
-            # 'filters': self.filters.__dict__,
+            'filters': self.filters.__dict__,
             'llm_config': self.llm_config.__dict__,
             # 'confidence_level': self.confidence_level
         }
@@ -74,9 +74,9 @@ class Config:
         # database_config = DatabaseConfig()
         # if 'database' in data:
         #     database_config = DatabaseConfig(**data['database'])
-        # filters = FiltersConfig()
-        # if 'filters' in data:
-        #     filters = FiltersConfig(**data['filters'])
+        filters = EmailFilter()
+        if 'filters' in data:
+            filters = EmailFilter(**data['filters'])
         # llm_config = LLMConfig(host="",
         #                        model="",
         #                        api_key=""
@@ -88,7 +88,7 @@ class Config:
             database=database_config,
             outlook_config=email_configs,
             trello_config=trello_config,
-            # filters=filters,
+            filters=filters,
             llm_config=llm_config,
             # confidence_level=data['confidence_level']
         )

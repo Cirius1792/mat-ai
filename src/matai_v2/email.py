@@ -170,6 +170,9 @@ class EmailContent:
         )
 
 
+from matai_v2.configuration import EmailFilter
+
+
 class EmailClientInterface(ABC):
     """Abstract interface for email client implementations"""
 
@@ -234,7 +237,7 @@ class O365EmailClient(EmailClientInterface):
         """Return True if the client is authenticated"""
         return self.client.is_authenticated
 
-    def read_messages(self, start_date: Optional[datetime] = None, limit: int = 100, **kwargs) -> Iterator[EmailContent]:
+    def read_messages(self, start_date: Optional[datetime] = None, limit: int = 100, filters: Optional[EmailFilter] = None, **kwargs) -> Iterator[EmailContent]:
         """Read messages and convert to EmailContent objects"""
         if not self.authenticated():
             raise RuntimeError("Authentication failed")
@@ -277,6 +280,9 @@ class O365EmailClient(EmailClientInterface):
                 content.body = msg.body  # This will trigger clean_body generation
                 logger.debug(
                     f"Retrieved message ID={content.message_id}, subject={content.subject}, received={content.timestamp}")
+                if filters and filters.recipients:
+                    if not any(recipient.email in filters.recipients for recipient in content.recipients):
+                        continue
 
                 yield content
             except: 
