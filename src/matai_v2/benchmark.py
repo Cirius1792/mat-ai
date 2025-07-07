@@ -294,11 +294,6 @@ def compute_score(email: EmailContent,
     prompt = create_judge_prompt(
         email, expected_action_items, actual_action_items)
 
-    # pprint("/n")
-    # print(prompt)
-    # pprint("/n")
-    # return
-
     # Call your LLM client here
     max_retries = 3
     llm_response = ""
@@ -326,9 +321,11 @@ def compute_score(email: EmailContent,
                 dimension_scores=result["dimension_scores"],
             )
         except (json.JSONDecodeError, KeyError, IndexError) as e:
-            logger.warning(f"LLM response parsing failed on attempt {i + 1}/{max_retries}. Error: {e}")
+            logger.warning(
+                f"LLM response parsing failed on attempt {i + 1}/{max_retries}. Error: {e}")
             if i == max_retries - 1:
-                logger.error(f"Response retrieved from the llm: {llm_response}")
+                logger.error(
+                    f"Response retrieved from the llm: {llm_response}")
                 logger.error(
                     f"Failed to parse LLM response after {max_retries} attempts. Returning zero score.")
                 return EvaluationResult(
@@ -352,7 +349,7 @@ def compute_score(email: EmailContent,
     )
 
 
-def analyze_model_performance(test_cases: List[Dict], client: OpenAI, model: str) -> Dict[str, float]:
+def analyze_judge_model_performance(test_cases: List[Dict], client: OpenAI, model: str) -> Dict[str, float]:
     """
     Analyze model performance across multiple test cases.
 
@@ -490,9 +487,9 @@ def create_perfect_score_test_case() -> Tuple[EmailTestCase, EvaluationResult]:
 
 
 def benchmark_model_from_dataset(llm_client: OpenAI, judge_models: List[str],
-                    test_data: List[Tuple[EmailTestCase, EvaluationResult]],
-                    score_fnc=compute_score
-                    ) -> Dict[str, Dict[str, EvaluationResult]]:
+                                 test_data: List[Tuple[EmailTestCase, EvaluationResult]],
+                                 score_fnc=compute_score
+                                 ) -> Dict[str, Dict[str, EvaluationResult]]:
     """Run a benchmark against the given judge model. The goal is to evaluate the effectiveness of a model to act a judge for the application.
     The score returned by the model is compared against a baseline score expected for each test case and the difference between the score in every category is computed. """
 
@@ -565,12 +562,13 @@ def store_benchmark_results_to_markdown_file(test_outcomes: Dict[str, Dict[str, 
 
 def store_application_test_case_to_jsonl(test_case: EmailTestCase, json_file_path: str):
     data = {
-            "description": test_case.description,
-            "email": test_case.email.to_json(),
-            "expected": [item.to_json() for item in test_case.expected],
+        "description": test_case.description,
+        "email": test_case.email.to_json(),
+        "expected": [item.to_json() for item in test_case.expected],
     }
     with open(json_file_path, 'a') as f:
         f.write(json.dumps(data) + '\n')
+
 
 def store_judge_test_case_to_jsonl(test_case: Tuple[EmailTestCase, EvaluationResult], json_file_path: str):
     data = {
@@ -606,7 +604,7 @@ def load_judge_test_from_jsonl(json_file_path: str) -> List[Tuple[EmailTestCase,
             )
             expected_scores = EvaluationResult(
                 **data["expected_scores"])
-            tests.append ((test_case, expected_scores))
+            tests.append((test_case, expected_scores))
     return tests
 
 
@@ -626,32 +624,33 @@ if __name__ == '__main__':
 
     file_path = args.output
 
+    body = ""
+    message_id = ""
+    subject = ""
+    sender = ""
 
     email = EmailContent(
-        message_id="test-no-action-items",
-        subject="Censimento Attività",
-        sender=EmailAddress("Andrea", "Andrea@company.com", "company.com"),
-        recipients=[EmailAddress("Bob", "bob@company.com", "company.com"),
-                    EmailAddress("Carol", "carol@company.com", "company.com")],
+        message_id=message_id,
+        subject=subject,
+        sender=EmailAddress(sender, f"{sender}@company.com", "company.com"),
+        recipients=[
+            EmailAddress("Mario", "bob@company.com", "company.com"),
+            EmailAddress("Carol", "carol@company.com", "company.com")
+        ],
         thread_id="thread-456",
-        timestamp=datetime.now(),
-        body="""Ciao,
- 
-vi confermo data inizio attività il 07/07/2025
- 
-Andrea Ciaccio
-        """
+        timestamp=datetime(2024, 3, 15),
+        body=body
     )
 
     expected_action_items = [
-        # ActionItem(
-        #     action_type=ActionType.TASK,
-        #     description="Finalize the technical specifications document",
-        #     due_date=datetime(2024, 3, 15),  # Friday, March 15th
-        #     message_id="test-perfect-score",
-        #     confidence_score=0.95,
-        #     id=1
-        # ),
+        ActionItem(
+            action_type=ActionType.TASK,
+            description="Estendere la richiesta di verifica dell'operatività dell'api search a CJ carte e DA",
+            due_date=datetime(2024, 3, 15),
+            message_id="test-no-action-item",
+            confidence_score=0.95,
+            id=1
+        ),
         # ActionItem(
         #     action_type=ActionType.TASK,
         #     description="Coordinate with design team and schedule review session",
@@ -671,10 +670,9 @@ Andrea Ciaccio
         # )
     ]
 
-
     test_case = EmailTestCase(email=email,
-                  expected=expected_action_items,
-                  actual=[],
-                  description="Test case for perfect score - all action items extracted correctly with precise dates and confidence"
-                  )
+                              expected=expected_action_items,
+                              actual=[],
+                              description="Should distinguish between a summary and a call to action"
+                              )
     store_application_test_case_to_jsonl(test_case, file_path)

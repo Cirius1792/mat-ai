@@ -11,7 +11,7 @@ from matai_v2.benchmark import (
     EvaluationResult,
     benchmark_model_from_dataset, 
     print_benchmark_results, 
-    store_judge_test_to_jsonl, 
+    store_judge_test_case_to_jsonl, 
     load_judge_test_from_jsonl, 
     create_perfect_score_test_case,
     compute_score,
@@ -122,7 +122,7 @@ def test_store_and_load_judge_test_to_jsonl():
     file_path = "test_judge_cases.jsonl"
 
     # Act
-    store_judge_test_to_jsonl(test_case, file_path)
+    store_judge_test_case_to_jsonl(test_case, file_path)
     loaded_test_cases = list(load_judge_test_from_jsonl(file_path))
 
     # Assert
