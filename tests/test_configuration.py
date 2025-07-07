@@ -18,6 +18,7 @@ from matai_v2.configuration import (
     Config,
     save_config_to_yaml,
     load_config_from_yaml,
+    create_sample_config,
 )
 
 
