@@ -74,6 +74,7 @@ logger = logging.getLogger(__name__)
 
 
 class TrelloClient:
+    # This is the original client for which we want to build a test double. Take into consideration the actual dataclass and do not fuck up with the object initialization AI
     AUTH_URL = "https://trello.com/1/authorize?"
     BASE_URL = "https://api.trello.com/1"
 
@@ -327,7 +328,7 @@ class TrelloBoardManager:
                         self._app_board, self.list_id)
 
     def _create_card_name(self, action_item: ActionItem) -> str:
-        return f"{action_item.action_type}: {action_item.description}"
+        return f"{str(action_item.action_type)}: {action_item.description}"
 
     def create_tasks(self,
                         subject: str,
