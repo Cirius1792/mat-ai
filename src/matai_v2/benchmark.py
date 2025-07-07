@@ -1,8 +1,8 @@
-from typing import Dict, Iterator, List, Optional, Tuple
-from dataclasses import dataclass
+from typing import Dict, List, Optional, Tuple
+from dataclasses import dataclass, field
 from typing import List
 import json
-from datetime import datetime, timedelta
+from datetime import datetime
 from openai import OpenAI
 from matai_v2.email import EmailAddress, EmailContent
 from matai_v2.logging import configure_logging
@@ -17,8 +17,8 @@ logger = logging.getLogger(__name__)
 class EmailTestCase:
     email: EmailContent
     expected: List[ActionItem]
-    actual: List[ActionItem]
     description: str
+    actual: List[ActionItem] = field(default_factory=list)
 
 
 def create_judge_prompt(email: EmailContent, expected_action_items: List[ActionItem], actual_action_items: List[ActionItem]) -> str:
@@ -563,7 +563,16 @@ def store_benchmark_results_to_markdown_file(test_outcomes: Dict[str, Dict[str, 
         f.write(result_table.get_string())
 
 
-def store_judge_test_to_jsonl(test_case: Tuple[EmailTestCase, EvaluationResult], json_file_path: str):
+def store_application_test_case_to_jsonl(test_case: EmailTestCase, json_file_path: str):
+    data = {
+            "description": test_case.description,
+            "email": test_case.email.to_json(),
+            "expected": [item.to_json() for item in test_case.expected],
+    }
+    with open(json_file_path, 'a') as f:
+        f.write(json.dumps(data) + '\n')
+
+def store_judge_test_case_to_jsonl(test_case: Tuple[EmailTestCase, EvaluationResult], json_file_path: str):
     data = {
         "test_data": {
             "description": test_case[0].description,
@@ -601,3 +610,60 @@ def load_judge_test_from_jsonl(json_file_path: str) -> List[Tuple[EmailTestCase,
     return tests
 
 
+if __name__ == '__main__':
+    # Take as program argument a path where a file will be created AI!
+
+    file_path =""
+
+
+    email = EmailContent(
+        message_id="test-no-action-items",
+        subject="Censimento Attività",
+        sender=EmailAddress("Andrea", "Andrea@company.com", "company.com"),
+        recipients=[EmailAddress("Bob", "bob@company.com", "company.com"),
+                    EmailAddress("Carol", "carol@company.com", "company.com")],
+        thread_id="thread-456",
+        timestamp=datetime.now(),
+        body="""Ciao,
+ 
+vi confermo data inizio attività il 07/07/2025
+ 
+Andrea Ciaccio
+        """
+    )
+
+    expected_action_items = [
+        # ActionItem(
+        #     action_type=ActionType.TASK,
+        #     description="Finalize the technical specifications document",
+        #     due_date=datetime(2024, 3, 15),  # Friday, March 15th
+        #     message_id="test-perfect-score",
+        #     confidence_score=0.95,
+        #     id=1
+        # ),
+        # ActionItem(
+        #     action_type=ActionType.TASK,
+        #     description="Coordinate with design team and schedule review session",
+        #     # Tuesday, March 12th at 2 PM
+        #     due_date=datetime(2024, 3, 12, 14, 0),
+        #     message_id="test-perfect-score",
+        #     confidence_score=0.90,
+        #     id=2
+        # ),
+        # ActionItem(
+        #     action_type=ActionType.TASK,
+        #     description="Prepare quarterly budget reports and submit",
+        #     due_date=datetime(2024, 3, 14),  # Thursday, March 14th
+        #     message_id="test-perfect-score",
+        #     confidence_score=0.92,
+        #     id=3
+        # )
+    ]
+
+
+    test_case = EmailTestCase(email=email,
+                  expected=expected_action_items,
+                  actual=[],
+                  description="Test case for perfect score - all action items extracted correctly with precise dates and confidence"
+                  )
+    store_application_test_case_to_jsonl(test_case, file_path)
