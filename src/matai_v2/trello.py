@@ -74,7 +74,6 @@ logger = logging.getLogger(__name__)
 
 
 class TrelloClient:
-    # This is the original client for which we want to build a test double. Take into consideration the actual dataclass and do not fuck up with the object initialization AI
     AUTH_URL = "https://trello.com/1/authorize?"
     BASE_URL = "https://api.trello.com/1"
 
