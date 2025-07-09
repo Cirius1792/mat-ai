@@ -50,7 +50,7 @@ def cli(ctx):
     }
 
 
-@cli.command("authenticate")
+@cli.command("authenticate", short_help="Set up the application authenticating with Outlook and Trello")
 @click.pass_context
 def authenticate_command(ctx):
     """Authenticate the application with the email server."""
@@ -59,30 +59,49 @@ def authenticate_command(ctx):
         click.echo("Application context not initialized. ")
         return
 
-    ctx_app = ctx.obj["app_ctx"]
+    ctx_app: ApplicationContext = ctx.obj["app_ctx"]
     if ctx_app.outlook_auth_client.is_authenticated:
-        click.echo("Already authenticated")
-        return
-
-    auth_link, _ = ctx_app.outlook_auth_client.get_auth_link()
-    click.echo("Please visit this URL to authenticate:")
-    click.echo(auth_link)
-    click.echo("After authentication, paste the URL you were redirected to below:")
-    token_input = input("Authentication URL: ")
-    result = ctx_app.outlook_auth_client.complete_authentication(token_input)
-    if result:
-        click.echo(
-            "Authentication completed successfully")
+        click.echo("Already authenticated with Outlook")
     else:
-        click.echo("Authentication failed. Please try again.")
+        auth_link, _ = ctx_app.outlook_auth_client.get_auth_link()
+        click.echo("Outlook")
+        click.echo("Please visit this URL to authenticate:")
+        click.echo(auth_link)
+        click.echo(
+            "After authentication, paste the URL you were redirected to below:")
+        token_input = input("Authentication URL: ")
+        result = ctx_app.outlook_auth_client.complete_authentication(
+            token_input)
+        if result:
+            click.echo(
+                "Authentication completed successfully")
+            click.echo()
+        else:
+            click.echo("Authentication failed. Please try again.")
+            return
+    app_config = ctx.obj["app_config"]
+    if not app_config.trello_config.board:
+        click.echo(
+            "No Trello board configured. Retrieving available boards...")
+        boards = ctx_app.trello_client.boards()
+        prompt = "Please select a board by entering the corresponding number:\n"
+        for i, board in enumerate(boards):
+            prompt += f"{i + 1}. {board.name} \n"
+        prompt += "Enter the number of the board you want to use: "
+        chosen_board = click.prompt(prompt, type=int, default=1, show_default=False,
+                                    show_choices=True, err=True)
+        config = ctx_app.config
+        config.trello_config.board = boards[chosen_board-1].id
+        save_config_to_yaml(config, configuration_path)
+        return
 
 
 @cli.command("run", short_help="Run the application to process new emails")
 @click.option("--days", "-d", type=int, default=2)
 @click.pass_context
 def run(ctx, days):
-    """Run the application processing the new emails not already processed and storing the identified action item on the given board. 
-    The emails are retrieved in the last n days, where n can be configured by passing the appropriate parameter. If no configuration is provided, the emails in the last 2 days are analysed. 
+    """Run the application processing the new emails not already processed and storing the identified action item on the given board.
+    The emails are retrieved in the last n days, where n can be configured by passing the appropriate parameter. If no configuration is provided, the emails in the last 2 days are analysed.
     """
     ctx_app: ApplicationContext = ctx.obj["app_ctx"]
     if not ctx_app.outlook_auth_client.is_authenticated:
@@ -133,15 +152,17 @@ def run(ctx, days):
 
 
 @cli.command("init", short_help="Initialize the application with a sample configuration")
-@click.option("--config", type=click.Path(), default=None, help="Path to the configuration file")
+@click.option("--config", type=click.Path(),
+              default=lambda: os.getenv(
+                  'PMAI_CONFIG_PATH', './config/config.yaml'),
+              help="Path to the configuration file")
 def init(config):
     """Initialize the application with a sample configuration."""
-    configuration_path = config if config else os.getenv('PMAI_CONFIG_PATH', './config/config.yaml')
     try:
-        logger.info("Creating sample configuration at %s", configuration_path)
-        config = create_sample_config()
-        save_config_to_yaml(config, configuration_path)
-        click.echo("Sample configuration created at " + configuration_path)
+        logger.info("Creating sample configuration at %s", config)
+        cfg = create_sample_config()
+        save_config_to_yaml(cfg, config)
+        click.echo("Sample configuration created at " + config)
     except Exception as e:
         click.echo(f"Error creating sample configuration: {e}")
 
@@ -149,16 +170,18 @@ def init(config):
 @cli.command("benchmark-judge", short_help="Score an AI Judge with the given llm configuration against a known dataset")
 @click.argument("test-file-path", type=click.Path(exists=True))
 @click.option("--models", type=str, help="Comma-separated list of model identifiers to benchmark. If none is provided, the model configured in the config file will be used")
-@click.option("--config", type=click.Path(exists=True), default=None, help="Path to the configuration file")
+@click.option("--config", type=click.Path(),
+              default=lambda: os.getenv(
+                  'PMAI_CONFIG_PATH', './config/config.yaml'),
+              help="Path to the configuration file")
 @click.option("--output", type=str, default=None, help="Path to save the benchmark results")
 def benchmark(test_file_path, models, config, output):
-    config_path = config if config is not None else configuration_path
-    config = load_config_from_yaml(config_path)
+    cfg = load_config_from_yaml(config)
     # Assuming you have an OpenAI client configured
     llm_client = OpenAI(
-        base_url=config.llm_config.host, api_key=config.llm_config.api_key)
+        base_url=cfg.llm_config.host, api_key=cfg.llm_config.api_key)
     # Replace with your actual model identifier
-    judge_model = [config.llm_config.model]
+    judge_model = [cfg.llm_config.model]
     if models:
         judge_model = models.split(',')
     results = benchmark_model_from_dataset(
@@ -167,5 +190,5 @@ def benchmark(test_file_path, models, config, output):
         load_judge_test_from_jsonl(test_file_path)
     )
     print_benchmark_results(results, click.echo)
-    if output is not None: 
+    if output is not None:
         store_benchmark_results_to_markdown_file(results, output)

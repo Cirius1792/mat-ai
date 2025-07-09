@@ -72,6 +72,7 @@ trello_config:
 ```
 To generate Outlook credentials, have a look at the [O365 documentation](https://o365.github.io/python-o365/latest/getting_started.html#oauth-setup-prerequisite).
 To generate Trello credentials, refer to the official [Trello API documentation](https://developer.atlassian.com/cloud/trello/guides/rest-api/authorization/).
+Once added the trello api key and token to the configuration file, when using the `authenticate` command you will be prompted to chose the Trello board on which a new list will be created. 
 
 ## Contributing
 
